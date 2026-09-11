@@ -120,6 +120,37 @@ motivo è obbligatorio: una deroga senza spiegazione è una svista.
 
 ---
 
+## Pubblicare su Cloudflare Pages
+
+Il sito è un export statico: non c'è niente da eseguire sul server, quindi Pages lo serve
+direttamente dai file.
+
+**Impostazioni del progetto** (una volta sola, nel pannello Cloudflare):
+
+| Campo | Valore |
+|---|---|
+| Framework preset | **None** — non Next.js: quello attiverebbe il runtime, che qui non serve |
+| Build command | `npm run build` |
+| Build output directory | `out` |
+| Node version | preso da `.node-version` |
+| Variabile `NEXT_PUBLIC_SITO` | il dominio vero, es. `https://nexteb.it` |
+| Variabile `NEXT_PUBLIC_FORM_ENDPOINT` | l'indirizzo a cui il modulo invia |
+
+Senza `NEXT_PUBLIC_SITO` il sito usa `nexteb.invalid` e **resta fuori dai motori di ricerca**:
+è voluto, così un'anteprima non finisce indicizzata per sbaglio.
+
+`public/_headers` viaggia con la build e porta la CSP e le regole di cache: file con
+l'impronta nel nome per sempre, video un mese. La CSP non ammette **nessun dominio di terzi**
+— è ciò che tiene vera l'assenza del banner cookie, e va cambiata solo aggiungendo
+consapevolmente ciò che serve.
+
+**Il collegamento fra GitHub e Cloudflare si fa dal pannello** (Workers & Pages → Create →
+Pages → Connect to Git) e richiede di autorizzare l'app Cloudflare su GitHub: non è una cosa
+che si possa creare da riga di comando, perché l'autorizzazione è personale. Fatto una volta,
+ogni `git push` su `main` pubblica da solo.
+
+---
+
 ## Cosa manca
 
 - Sezioni S1–S8

@@ -15,57 +15,64 @@ import { Luce } from '@/components/brand/Luce';
 import { Testata } from '@/components/layout/Testata';
 import { PannelloContatti } from '@/components/layout/PannelloContatti';
 import { Preloader } from '@/components/layout/Preloader';
-import { VideoHero } from '@/components/hero/VideoHero';
+import { Palco } from '@/components/palco/Palco';
 import { Sovrimpressione } from '@/components/hero/Sovrimpressione';
+import { Sezioni } from '@/components/sections/Sezioni';
 import { avviaScorrimento } from '@/lib/lenis';
+import { caricaPlugin } from '@/lib/gsap';
+import { SEZIONI, fin, type IdSezione } from '@/lib/racconto';
 import { eroe } from '@/content/it';
 
 export default function Pagina() {
   const video = useRef<HTMLVideoElement>(null);
   const [pronto, setPronto] = useState(false);
   const [contatti, setContatti] = useState(false);
-  const [uscitaHero, setUscitaHero] = useState(0);
   const [tempoVideo, setTempoVideo] = useState(0);
-  const [animando, setAnimando] = useState(false);
+  const [inHero, setInHero] = useState(true);
 
   useEffect(() => avviaScorrimento(), []);
 
-  // quanto siamo usciti dalla hero: 0 in cima, 1 dopo il primo schermo
-  useEffect(() => {
-    let fermo: ReturnType<typeof setTimeout>;
-
-    const leggi = () => {
-      // innerHeight puo' valere 0 al primo calcolo, prima che il layout esista.
-      // 0/0 propaga NaN per sempre, e un NaN in un confronto e' sempre falso:
-      // niente errori, niente segni a schermo, solo una cosa che non compare
-      // mai. E' il difetto che costa piu' tempo a trovare, quindi la guardia
-      // sta qui e non altrove.
-      const alto = innerHeight || document.documentElement.clientHeight || 1;
-      const quota = window.scrollY / alto;
-      setUscitaHero(Number.isFinite(quota) ? Math.max(0, Math.min(1, quota)) : 0);
-
-      // `animando` accende will-change solo mentre il telaio si muove davvero
-      setAnimando(true);
-      clearTimeout(fermo);
-      fermo = setTimeout(() => setAnimando(false), 200);
-    };
-
-    leggi();
-    addEventListener('scroll', leggi, { passive: true });
-    addEventListener('resize', leggi, { passive: true });
-    return () => {
-      removeEventListener('scroll', leggi);
-      removeEventListener('resize', leggi);
-      clearTimeout(fermo);
-    };
+  /**
+   * Le sezioni avvisano qui. L'unico stato di React che dipende dallo scroll e'
+   * `inHero`, e cambia due volte in tutta la pagina: tutto il resto passa dal
+   * palco, che scrive sul DOM senza far ridisegnare l'albero.
+   */
+  const suSezione = useCallback((id: IdSezione, p: number) => {
+    setInHero(id === 'hero' && p < 0.55);
   }, []);
 
-  // il bagliore del bottone finale insegue il puntatore dentro il bottone
-  const seguiCursore = useCallback((e: React.PointerEvent<HTMLButtonElement>) => {
-    const b = e.currentTarget;
-    const r = b.getBoundingClientRect();
-    const dentro = ((e.clientX - r.left) / r.width) * 100;
-    b.style.setProperty('--cx', `${dentro.toFixed(1)}%`);
+  /* La linea del metodo e le sue tappe: l'unica animazione fuori dal palco. */
+  useEffect(() => {
+    let vivo = true;
+    const disfa: Array<() => void> = [];
+
+    caricaPlugin().then(({ ScrollTrigger }) => {
+      if (!vivo) return;
+      const sez = document.querySelector<HTMLElement>('[data-sezione="s7"]');
+      const linea = sez?.querySelector<SVGLineElement>('.linea-svg line');
+      const tappe = Array.from(sez?.querySelectorAll<HTMLElement>('.tappa') ?? []);
+      if (!sez || !linea) return;
+
+      const st = ScrollTrigger.create({
+        trigger: sez,
+        start: 'top 75%',
+        end: 'bottom 70%',
+        scrub: true,
+        onUpdate: (self) => {
+          const q = fin(self.progress, 0.05, 0.8);
+          linea.style.setProperty('--dis', q.toFixed(3));
+          tappe.forEach((t, i) => {
+            t.dataset.on = q > (i + 0.25) / tappe.length ? 'si' : 'no';
+          });
+        },
+      });
+      disfa.push(() => st.kill());
+    });
+
+    return () => {
+      vivo = false;
+      disfa.forEach((f) => f());
+    };
   }, []);
 
   const apriContatti = useCallback(() => setContatti(true), []);
@@ -78,47 +85,28 @@ export default function Pagina() {
       <Testata visibile={pronto} onContatti={apriContatti} contattiAperti={contatti} />
       <PannelloContatti aperto={contatti} onChiudi={chiudiContatti} />
 
-      {/* Il palco: fisso, vive per tutto il documento */}
-      <div className="palco" aria-hidden="false">
-        <div className="telaio-guscio" data-animando={animando ? "si" : "no"}>
-          <div className="telaio">
-            <VideoHero
-              videoRef={video}
-              uscita={uscitaHero}
-              pronto={pronto}
-              onTempo={setTempoVideo}
-            />
-          </div>
-        </div>
-      </div>
+      <Palco videoRef={video} pronto={pronto} onTempo={setTempoVideo} onSezione={suSezione} />
 
       {/* I titoli stanno sotto il telaio, sempre nello stesso punto: cosi'
           l'occhio ha un posto solo dove cercare la parola, per tutta la pagina. */}
       <div className="titoli" aria-hidden="true">
-        <Sovrimpressione tempo={tempoVideo} visibile={pronto && uscitaHero < 0.45} />
+        <Sovrimpressione tempo={tempoVideo} visibile={pronto && inHero} />
       </div>
 
       <main id="contenuto">
-        {/* Lo spazio di scorrimento della hero. Le sezioni arrivano qui. */}
-        <section className="corsa" style={{ height: '200vh' }} aria-label="Apertura" />
+        {/* La corsa della hero: il video sta fermo, questo e' il suo tempo. */}
+        <section
+          className="corsa"
+          data-sezione="hero"
+          style={{ height: `${SEZIONI[0].vh}vh` }}
+          aria-label="Apertura"
+        />
 
-        <p className="invito-scorri" data-visibile={uscitaHero < 0.1 && pronto ? 'si' : 'no'}>
+        <Sezioni onContatti={apriContatti} />
+
+        <p className="invito-scorri" data-visibile={inHero && pronto ? 'si' : 'no'}>
           {eroe.scorri}
         </p>
-
-        {/* Chi arriva in fondo ha finito di guardare: qui la cosa da fare e' una
-            sola, e deve essere grossa e sola. Apre lo stesso pannello della
-            testata, cosi' i recapiti stanno scritti in un posto solo. */}
-        <section className="chiusura" aria-label={eroe.contattaci}>
-          <button
-            type="button"
-            className="bottone-grande"
-            onClick={apriContatti}
-            onPointerMove={seguiCursore}
-          >
-            {eroe.contattaci}
-          </button>
-        </section>
       </main>
     </>
   );

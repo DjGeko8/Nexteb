@@ -63,7 +63,8 @@ export const sezioni = {
     testo: 'La stessa esperienza, in tasca ai tuoi clienti.',
   },
   s5: {
-    titolo: 'Non vuole visitarlo. Vuole viverlo.',
+    titolo: 'Vuole viverlo.',
+    testo: 'Oggi il tuo cliente non vuole solo visitare il tuo sito.',
     didascalie: ['Home', 'Prenota', 'Ordini', 'Assistente', 'Confermato'],
     conversazione: [
       'Come posso aiutarti oggi?',

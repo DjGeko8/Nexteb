@@ -1,0 +1,283 @@
+/* ===========================================================================
+   LE SEZIONI
+   S1-S5 sono spazi di scorrimento: quello che si vede e' il telaio, che sta
+   altrove. Qui c'e' il testo — vero HTML, leggibile senza JavaScript.
+   =========================================================================== */
+
+.corsa {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  align-items: end;
+  justify-items: center;
+  pointer-events: none;
+}
+
+/* Il testo sta in fondo alla corsa e resta appiccicato in basso mentre la
+   sezione scorre: cosi' compare sempre nello stesso punto, sotto il telaio. */
+/* Lo stato base e-- VISIBILE: senza JavaScript i titoli ci sono tutti, uno
+   sotto l-altro, e la pagina si legge come un documento. L-opacita- la
+   governa il palco solo quando il JavaScript c-e-. */
+/* Con il JavaScript i titoli diventano FISSI, tutti nello stesso punto sotto
+   il telaio: in sticky quello uscente e quello entrante finivano a schermo
+   insieme, e sopra il telefono invece che sotto. Ne e' visibile uno alla
+   volta perche' l'opacita' la governa il palco. */
+html.js .corsa-testo {
+  opacity: 0;
+  position: fixed;
+  inset: auto 0 clamp(3.5rem, 9vh, 6.5rem) 0;
+  margin: 0 auto;
+  z-index: 2;
+}
+
+.corsa-testo {
+  position: sticky;
+  transition: opacity var(--durata-componente) var(--ease-stato);
+  bottom: clamp(4.5rem, 11vh, 8rem);
+  text-align: center;
+  padding: 0 5vw;
+  pointer-events: auto;
+  max-width: 40ch;
+}
+.corsa-testo h2 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 118%;
+  font-size: clamp(1.5rem, .9rem + 3.2vw, 3.2rem);
+  line-height: 1;
+  letter-spacing: -.025em;
+  margin: 0;
+  color: var(--color-bianco);
+  text-shadow: 0 2px 28px rgba(2, 6, 17, .85);
+  text-wrap: balance;
+}
+.corsa-testo p {
+  margin: .7rem 0 0;
+  font-size: clamp(.85rem, .8rem + .3vw, 1rem);
+  color: var(--color-chiaro);
+  text-shadow: 0 2px 20px rgba(2, 6, 17, .9);
+}
+
+/* ---------------------------------------------------------------------------
+   I PANNELLI con contenuto vero (S6, S7, S8)
+   --------------------------------------------------------------------------- */
+.pannello {
+  position: relative;
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  padding: 12vh clamp(1.2rem, 5vw, 4rem);
+  background: var(--color-nero);
+}
+.contenitore { width: min(1000px, 100%); }
+
+.sezione-titolo {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: clamp(.68rem, .8vw, .78rem);
+  color: var(--color-chiaro);
+  margin: 0 0 clamp(1.5rem, 5vh, 3rem);
+}
+
+/* ------------------------------------------------------------------ S6 --- */
+.servizi { border-top: 1px solid var(--color-cupo); }
+.servizio {
+  border-bottom: 1px solid var(--color-cupo);
+  padding: clamp(.9rem, 2.6vh, 1.9rem) 0;
+  display: grid;
+  gap: .25rem;
+  position: relative;
+  transition: padding-inline-start var(--durata-componente) var(--ease-entrata),
+              opacity var(--durata-micro);
+}
+.servizio::before {
+  content: "";
+  position: absolute;
+  inset: auto 0 -1px 0;
+  height: 1px;
+  background: var(--color-vivo);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--durata-componente) var(--ease-entrata);
+}
+.servizio h3 {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 116%;
+  font-size: clamp(1.3rem, .85rem + 2.4vw, 2.7rem);
+  line-height: 1;
+  letter-spacing: -.025em;
+  margin: 0;
+  color: var(--color-bianco);
+}
+.servizio p { margin: 0; color: var(--color-chiaro); font-size: .92rem; max-width: 54ch; }
+
+/* Le sorelle si attenuano e quella puntata rientra. Si anima il padding e non
+   transform, cosi' il filetto sotto la riga non si sposta e l'elenco non
+   "respira". Il cancello @media e' obbligatorio: su tocco resterebbe una riga
+   accesa dopo il tap. Attenuazione a .45 e non .32: sotto, per chi legge in
+   fretta o con poca vista, le righe spente diventano illeggibili. */
+@media (hover: hover) and (pointer: fine) {
+  .servizi:hover .servizio { opacity: .45; }
+  .servizi .servizio:hover { opacity: 1; padding-inline-start: clamp(.6rem, 1.6vw, 1.6rem); }
+  .servizi .servizio:hover::before { transform: scaleX(1); }
+}
+
+.anteprima {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 200px;
+  height: 126px;
+  border: 1px solid var(--color-blu);
+  background: var(--color-abisso);
+  border-radius: 4px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  pointer-events: none;
+  opacity: 0;
+  z-index: 5;
+  transform: translate3d(var(--x, 0), var(--y, 0), 0) translate(-50%, -50%);
+  transition: opacity var(--durata-micro) var(--ease-stato);
+  box-shadow: 0 0 40px rgba(56, 86, 170, .35);
+}
+.anteprima[data-on="si"] { opacity: 1; }
+.anteprima span { height: 8px; background: var(--color-cupo); border-radius: 2px; display: block; }
+.anteprima span:first-child { background: var(--color-vivo); width: 45%; }
+
+.confronto {
+  position: relative;
+  margin-top: .8rem;
+  height: 130px;
+  max-width: 460px;
+  border: 1px solid var(--color-cupo);
+  overflow: hidden;
+  cursor: ew-resize;
+  user-select: none;
+  touch-action: none;
+}
+.confronto .lato {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .08em;
+}
+.confronto .prima {
+  background: repeating-linear-gradient(45deg, var(--color-grigio) 0 10px, #A4A5B1 10px 20px);
+  color: #474854;
+}
+.confronto .dopo {
+  background: linear-gradient(120deg, var(--color-cupo), var(--color-nero));
+  color: var(--color-nebbia);
+  clip-path: inset(0 0 0 var(--taglio, 50%));
+}
+.confronto .maniglia {
+  position: absolute;
+  inset: 0 auto 0 var(--taglio, 50%);
+  width: 1px;
+  background: var(--color-vivo);
+}
+.confronto .maniglia::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 24px;
+  height: 24px;
+  transform: translate(-50%, -50%);
+  border: 1px solid var(--color-vivo);
+  border-radius: 50%;
+  background: var(--color-nero);
+}
+
+/* ------------------------------------------------------------------ S7 --- */
+.metodo { text-align: center; }
+.linea-svg { width: 100%; height: 60px; overflow: visible; }
+.linea-svg line {
+  stroke: var(--color-cupo);
+  stroke-width: 1;
+  stroke-dasharray: var(--len, 980);
+  stroke-dashoffset: calc(var(--len, 980) * (1 - var(--dis, 0)));
+}
+.tappe {
+  list-style: none;
+  margin: -40px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .6rem;
+}
+.tappa { opacity: .25; transition: opacity var(--durata-componente) var(--ease-stato); }
+.tappa[data-on="si"] { opacity: 1; }
+.tappa i {
+  display: block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: var(--color-vivo);
+  margin: 0 auto 1rem;
+  transition: transform var(--durata-componente) var(--ease-entrata),
+              box-shadow var(--durata-componente) var(--ease-stato);
+}
+.tappa b {
+  display: block;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-stretch: 112%;
+  font-size: clamp(.88rem, 1.8vw, 1.12rem);
+  color: var(--color-bianco);
+}
+.tappa span {
+  display: block;
+  margin-top: .3rem;
+  font-size: .8rem;
+  color: var(--color-chiaro);
+  opacity: 0;
+  transform: translateY(-4px);
+  transition: opacity var(--durata-componente), transform var(--durata-componente) var(--ease-entrata);
+}
+@media (hover: hover) and (pointer: fine) {
+  .tappa:hover i { transform: scale(1.9); box-shadow: 0 0 18px rgba(93, 123, 212, .9); }
+  .tappa:hover span { opacity: 1; transform: none; }
+}
+@media (max-width: 700px) {
+  .tappe { grid-template-columns: repeat(2, 1fr); gap: 1.6rem; margin-top: 1rem; }
+  .linea-svg { display: none; }
+  .tappa span { opacity: 1; transform: none; }
+}
+
+/* ------------------------------------------------------------------ S8 --- */
+.finale { text-align: center; display: grid; justify-items: center; gap: clamp(1.5rem, 5vh, 2.6rem); }
+.claim {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 118%;
+  font-size: clamp(1.5rem, 1rem + 2.8vw, 3rem);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+  color: var(--color-bianco);
+  text-wrap: balance;
+  max-width: 18ch;
+}
+.piede {
+  margin: clamp(1.5rem, 5vh, 3rem) 0 0;
+  padding-top: 1rem;
+  border-top: 1px solid var(--color-cupo);
+  width: min(760px, 100%);
+  font-family: var(--font-mono);
+  font-size: .64rem;
+  color: var(--color-chiaro);
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.4rem;
+  justify-content: center;
+}
+.piede a { color: inherit; }

@@ -1,0 +1,26 @@
+# Intestazioni per Cloudflare Pages.
+# Questo file viene copiato tale e quale in out/ e Pages lo legge da li'.
+
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  X-Frame-Options: DENY
+  Permissions-Policy: geolocation=(), microphone=(), camera=(), payment=(), interest-cohort=()
+  # Il sito non fa NESSUNA richiesta a terzi: niente font remoti, niente
+  # analytics, niente mappe, niente reCAPTCHA. E' la ragione per cui puo' non
+  # avere il banner cookie — e questa direttiva e' cio' che lo mantiene vero.
+  # 'unsafe-inline' sugli script serve allo snippet che mette `js` su <html>
+  # prima del primo paint; sugli stili serve alle custom property scritte a
+  # runtime dal palco.
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; media-src 'self'; font-src 'self'; connect-src 'self'; object-src 'none'; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; upgrade-insecure-requests
+
+# I file con l'impronta nel nome non cambiano mai: si possono tenere per sempre.
+/_next/static/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# Il video cambia solo quando lo si sostituisce a mano: un mese e' prudente.
+/media/*
+  Cache-Control: public, max-age=2592000

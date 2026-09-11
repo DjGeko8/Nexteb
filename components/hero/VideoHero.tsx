@@ -22,15 +22,13 @@ import { BarraCapitoli } from './BarraCapitoli';
 
 type Props = {
   videoRef: React.RefObject<HTMLVideoElement | null>;
-  /** 0 in cima alla hero, 1 quando la hero e' finita */
-  uscita: number;
   /** il preloader ha finito: si puo' partire */
   pronto: boolean;
   /** la pagina usa il tempo per decidere quale sovrimpressione mostrare */
   onTempo: (secondi: number) => void;
 };
 
-export function VideoHero({ videoRef, uscita, pronto, onTempo }: Props) {
+export function VideoHero({ videoRef, pronto, onTempo }: Props) {
   const [tempo, setTempo] = useState(0);
   const [inPausa, setInPausa] = useState(false);
   const [audio, setAudio] = useState(false);
@@ -137,9 +135,9 @@ export function VideoHero({ videoRef, uscita, pronto, onTempo }: Props) {
         ))}
       </video>
 
-      <BarraCapitoli tempo={tempo} onSalta={salta} visibile={uscita < 0.5} />
+      <BarraCapitoli tempo={tempo} onSalta={salta} visibile />
 
-      <div className="hero-controlli" data-visibile={uscita < 0.5 ? 'si' : 'no'}>
+      <div className="hero-controlli" data-visibile="si">
         <button
           type="button"
           onClick={commutaPausa}
