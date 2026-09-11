@@ -4,8 +4,23 @@
    viene mai svuotato e riempito, cambia solo cosa si vede attraverso.
    =========================================================================== */
 
+/* IL VIDEO riempie il palco, cioe' lo schermo. Tutto il resto no.
+   Gli altri strati sono disegni: tipi, spaziature e altezze qui sotto sono
+   tarati sulla larghezza del RIQUADRO. Stirarli a tutto schermo li
+   trasformerebbe in una pagina vuota con la scritta piccola in mezzo — percio'
+   restano della loro misura, centrati, e il clip-path li scopre. */
 .strato { position: absolute; inset: 0; opacity: 0; }
 .strato[data-strato="video"] { opacity: 1; }
+
+.strato-riquadro,
+.strato-telefono {
+  inset: auto;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.strato-riquadro { width: var(--rq-w, 980px); height: var(--rq-h, 551px); }
+.strato-telefono { width: var(--tel-w, 155px); height: var(--tel-h, 349px); }
 
 /* ---------------------------------------------------------------- S1 ---
    Il sito vecchio. Grigio-blu, non beige: il caldo spezzava la grafica del
@@ -200,12 +215,13 @@
 .n-col div { height: 58px; background: var(--color-notte); border-radius: 4px; border: 1px solid var(--color-cupo); }
 .n-rig { height: 5px; background: var(--color-cupo); border-radius: 2px; }
 
-/* La larghezza del TELEFONO, non quella del telaio: il clip-path mostra solo
-   la fascia centrale, e un layout impaginato a tutta larghezza si vedrebbe a
-   fette. La misura la calcola il palco e la scrive come --tel-w: le container
-   query facevano la stessa cosa ma ririsolvevano a ogni fotogramma, e con la
-   conversazione che si scrive dentro bastava a bloccare il renderer. */
-.nuovo-m { width: var(--tel-w, 155px); margin-inline: auto; padding: 11px; gap: 6px; }
+/* Lo strato e' gia' largo quanto il telefono (--tel-w, calcolata dal palco:
+   le container query facevano la stessa cosa ma ririsolvevano a ogni
+   fotogramma, e con la conversazione che si scrive dentro bastavano a
+   bloccare il renderer). Qui dentro si ragiona in percentuale. */
+/* Niente `width` qui: la darebbe DOPO .strato-telefono e vincerebbe, ridando
+   allo strato la larghezza del palco — cioe' dello schermo. */
+.nuovo-m { padding: 11px; gap: 6px; }
 .nuovo-m .n-barra { height: 15px; }
 .nuovo-m .n-hero { height: 112px; padding: 0 11px; }
 .nuovo-m .n-t { width: 84%; }
@@ -218,9 +234,7 @@
 .schermate { overflow: hidden; }
 .nastro {
   position: absolute;
-  inset: 0 0 auto 50%;
-  width: var(--tel-w, 155px);
-  margin-left: calc(var(--tel-w, 155px) / -2);
+  inset: 0 0 auto 0;
   transform: translate3d(0, calc(var(--y, 0) * -1px), 0);
 }
 .schermo {
@@ -268,13 +282,30 @@
   font-size: 18px;
 }
 
-/* ---------------------------------------------------------------- S8 --- */
+/* ---------------------------------------------------------------- S8 ---
+   IL DISEGNO DEL MODULO — e la sua consegna.
+
+   Sta nello stesso rettangolo del foglio vero del finale (app/sezioni.css) e
+   usa la STESSA griglia: sopra quello che si legge, sotto — sulla riga
+   dell'azione — quello che si tocca. Percio' la capsula disegnata e il bottone
+   vero hanno lo stesso centro su qualunque finestra, e la dissolvenza fra i due
+   si legge come una cosa che diventa vera.
+   Nessuna delle due misure e' scritta qui: --linea-azione, --aria-riquadro e
+   le proporzioni della capsula stanno una volta sola in app/globals.css.
+   ----------------------------------------------------------------------- */
 .modulo {
-  padding: 16px 14px;
+  padding: var(--aria-riquadro);
+  display: grid;
+  grid-template-rows: var(--linea-azione) auto;
+  background: var(--color-abisso);
+}
+/* Il contenitore tiene i tre riquadri disegnati in UNA riga della griglia a due
+   fasce: senza, finirebbero in tre righe e la capsula in una quarta inventata
+   dal browser, perdendo l'allineamento con il bottone vero. */
+.modulo-campi {
   display: grid;
   align-content: center;
   gap: 8px;
-  background: var(--color-abisso);
 }
 .modulo .campo {
   height: 30px;
@@ -289,8 +320,11 @@
 }
 .modulo .campo-alto { height: 52px; align-items: flex-start; padding-top: 9px; }
 .modulo .campo-invia {
-  height: 32px;
-  border-radius: 16px;
+  align-self: center;
+  justify-self: center;
+  width: min(var(--capsula-w), 100%);
+  height: var(--capsula-h);
+  border-radius: 100px;
   background: var(--color-vivo);
   color: var(--color-nero);
   display: grid;
@@ -298,11 +332,23 @@
   font-family: var(--font-display);
   font-weight: 700;
   font-stretch: 110%;
-  font-size: 11px;
+  font-size: clamp(1.05rem, .9rem + .9vw, 1.5rem);
 }
 
 /* ------------------------------------------------------ la scocca --- */
-.scocca { position: absolute; inset: 0; overflow: visible; pointer-events: none; }
+/* La scocca sta FUORI dal telaio ritagliato, e ha esattamente la misura del
+   telefono: il viewBox lo riscrive il palco quando la finestra cambia, cosi'
+   il rapporto combacia e il tratto non si deforma mai. */
+.scocca {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--tel-w, 155px);
+  height: var(--tel-h, 349px);
+  transform: translate(-50%, -50%);
+  overflow: visible;
+  pointer-events: none;
+}
 .scocca rect,
 .scocca line {
   fill: none;

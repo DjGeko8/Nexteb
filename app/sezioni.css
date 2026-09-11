@@ -253,24 +253,153 @@ html.js .corsa-testo {
   .tappa span { opacity: 1; transform: none; }
 }
 
-/* ------------------------------------------------------------------ S8 --- */
-.finale { text-align: center; display: grid; justify-items: center; gap: clamp(1.5rem, 5vh, 2.6rem); }
+/* ------------------------------------------------------------------ S8 ---
+   IL FINALE E' L'UNICA SEZIONE CHE LASCIA VEDERE IL PALCO.
+
+   Sotto S8 succede l'ultima cosa del racconto: il telefono si riapre nel
+   riquadro e diventa il modulo. Con il fondo opaco di `.pannello` quella
+   coreografia si svolgeva dietro un muro nero e non l'ha vista mai nessuno.
+   Qui il fondo non sparisce: si RITIRA, e solo quando il palco dichiara di
+   essere lui, li' sotto, a fare da fondo.
+   --------------------------------------------------------------------------- */
+
+/* `place-items: normal` NON e' cosmesi. `.pannello` porta `place-items: center`
+   e Chrome applica `justify-items` anche al layout a blocchi: senza questa riga
+   `.finale-palco` — che ha per soli figli elementi in posizione assoluta o
+   dimensionati, cioe' contenuto di larghezza max-content zero — viene
+   dimensionato al contenuto e COLLASSA A 0px, portandosi dietro il foglio e il
+   piede. E il guasto e' invisibile su meta' delle macchine: dove
+   l'allineamento a blocchi non e' implementato la pagina sembra giusta. */
+.pannello.finale-sez {
+  display: block;
+  place-items: normal;
+  padding: 0;
+  background: transparent;
+}
+
+/* IL FONDO CHE SI RITIRA.
+   `--scoperto` lo scrive SOLO l'atto s8 e vale quanto il telaio e' acceso: un
+   numero, due lettori. Dove non lo scrive nessuno la variabile non esiste, il
+   var() cade sul suo 0 e il pannello resta nero pieno — senza JavaScript, con
+   il pezzo di GSAP che non arriva (lib/gsap.ts carica `./plugin` in un chunk a
+   parte e Palco.tsx lo consuma senza `catch`), o arrivando al fondo con un
+   salto invece che scorrendo. In tutti quei casi `html.js` c'e' gia', quindi
+   una guardia appesa a lui NON scatterebbe: il palco pero' e' rimasto al
+   fotogramma di `atto.hero(0)`, cioe' video a tutto schermo, e il claim bianco
+   ci farebbe da 1,6 a 7:1 a seconda del fotogramma. Il caso peggiore non e' il
+   video in moto, e' il POSTER: #B6B7C2, dove il bianco fa 1,88:1.
+   Il ripiego non e' una svista: e' la politica di sicurezza. */
+.finale-sez::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--color-nero);
+  opacity: calc(1 - var(--scoperto, 0));
+}
+
+/* IL PALCOSCENICO DEL FINALE E' UNA SCHERMATA, E STA FERMO.
+   `sticky` e non un pin: la corsa dell'appiccicamento vale esattamente
+   (altezza della sezione - una schermata), cioe' la STESSA corsa che
+   ScrollTrigger da' all'ultima sezione con `end: 'bottom bottom'`. Nessun
+   numero da tenere in pari fra CSS e JavaScript, e senza JavaScript funziona
+   uguale.
+   Serve perche' il telaio e' centrato nel VIEWPORT mentre il contenuto di una
+   sezione piu' alta di uno schermo e' centrato nella SEZIONE: i due centri
+   erano sfalsati di META' della corsa (208px con la vecchia S8 da 150vh) e il
+   piede cadeva sul primo campo del disegno. Non e' un margine sbagliato, e'
+   aritmetica: si toglie cambiando CHI centra, non di quanto.
+   `dvh` e non `vh`: su iOS `vh` e' la viewport GRANDE mentre lo scorrimento usa
+   quella corrente, e il palcoscenico risulterebbe piu' alto dello schermo
+   proprio nella schermata conclusiva. */
+.finale-palco {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  display: grid;
+  place-items: center;
+}
+
+/* IL FOGLIO E' IL RIQUADRO: stessa misura, stesso centro, stessa griglia del
+   disegno che se ne sta andando. Percio' il bottone vero atterra dove stava la
+   capsula "Invia richiesta", e la dissolvenza si legge come un oggetto che
+   diventa vero invece che come due oggetti che si danno il cambio.
+   `min(..., 100%)` su tutte e due le misure: prima dell'idratazione --rq-w e
+   --rq-h non esistono e i ripieghi (980 e 551,25px, cioe' il TETTO di
+   misureRiquadro) sarebbero piu' grandi della finestra. */
+.finale-foglio {
+  width: min(var(--rq-w, 61.25rem), 100%);
+  height: min(var(--rq-h, 34.45rem), 100%);
+  padding: var(--aria-riquadro);
+  display: grid;
+  grid-template-rows: var(--linea-azione) auto;
+  justify-items: center;
+  text-align: center;
+  /* LA CONSEGNA. Lo stato base e' 1: senza JavaScript, o se GSAP non arriva, la
+     frase e il bottone ci sono interi su un pannello opaco — cioe' la pagina di
+     oggi. Il numero lo scrive il palco solo nell'ultimo quarto di S8. */
+  opacity: var(--consegna, 1);
+}
+.finale-foglio .claim { align-self: center; }
+.finale-foglio .bottone-grande { align-self: center; }
+
+/* Finche' il foglio e' trasparente non deve intercettare il puntatore: un
+   bersaglio invisibile e' un clic che nessuno ha chiesto, e succederebbe nel
+   punto di conversione. `:not(:focus-within)` e non una seconda regola: una
+   regola separata `.finale-foglio:focus-within { pointer-events: auto }`
+   peserebbe (0,2,0) contro (0,3,0) e PERDEREBBE — il bottone resterebbe
+   acceso, a fuoco e sordo al mouse, e nessuna prova da tastiera potrebbe
+   vederlo perche' Invio funziona lo stesso.
+   Lo stato lo scrive il palco: se il palco non c'e' l'attributo non c'e' e il
+   bottone resta cliccabile, che e' il verso giusto in cui sbagliare. Il piede
+   sta fuori dal foglio e non si spegne mai. */
+.finale-sez[data-consegnato="no"] .finale-foglio:not(:focus-within) {
+  pointer-events: none;
+}
+/* Chi arriva con il Tab non ha scorrito: se il fuoco entra, il foglio c'e'. */
+.finale-foglio:focus-within { opacity: 1; }
+
 .claim {
   margin: 0;
   font-family: var(--font-display);
   font-weight: 800;
   font-stretch: 118%;
-  font-size: clamp(1.5rem, 1rem + 2.8vw, 3rem);
+  /* La taglia non puo' dipendere solo dalla finestra. Il riquadro e' 16:9 e
+     sotto i 900px di larghezza diventa una feritoia alta un quinto dello
+     schermo (197px a 390 di larghezza): il tetto legato a --rq-h e' cio' che
+     impedisce al claim di sfondare la fascia della lettura e finire sopra il
+     bottone — il difetto misurato a 320px CSS, cioe' al 400% di zoom su un
+     1280, dove la parola finiva dietro la capsula blu a 3,78:1. */
+  font-size: min(clamp(1.5rem, 1rem + 2.8vw, 3rem), calc(var(--rq-h, 34.45rem) * .11));
   line-height: 1.05;
   letter-spacing: -.025em;
   color: var(--color-bianco);
   text-wrap: balance;
   max-width: 18ch;
 }
+
+/* IL PIEDE STA FUORI DAL FOGLIO, E SU UN LETTO SUO.
+   Non per composizione: per contrasto. I dati obbligatori vogliono un fondo di
+   luminanza NOTA e nessun movimento sopra. Il letto e' --color-nero, lo stesso
+   colore del fondo pagina: fuori dal riquadro non si vede (nero su nero), e
+   nelle finestre basse — dove la banda libera sotto il riquadro si assottiglia
+   fino a sparire — e' l'unica cosa che tiene i 7,66:1.
+   Largo quanto il PALCOSCENICO e non quanto il testo: un letto legato alla
+   larghezza del piede lascia scoperti i lati, e li' sotto ci sono i campi del
+   disegno, dello stesso colore e della stessa taglia del piede.
+   La rampa e' corta e il testo comincia dopo: sopra i glifi il nero e' pieno.
+   Niente filetto sopra: il vecchio border-top faceva 1,35:1 sul nero — una
+   riga che finge di essere una riga. Qui separa lo spazio. */
+.finale-fascia {
+  position: absolute;
+  inset: auto 0 0 0;
+  display: grid;
+  justify-items: center;
+  padding: 1rem clamp(1.2rem, 5vw, 4rem) clamp(.8rem, 2vh, 1.4rem);
+  background: linear-gradient(180deg, transparent, var(--color-nero) .6rem);
+}
 .piede {
-  margin: clamp(1.5rem, 5vh, 3rem) 0 0;
-  padding-top: 1rem;
-  border-top: 1px solid var(--color-cupo);
+  margin: 0;
   width: min(760px, 100%);
   font-family: var(--font-mono);
   font-size: .64rem;

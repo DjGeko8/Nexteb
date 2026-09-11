@@ -16,7 +16,7 @@ import { sezioni } from '@/content/it';
  *  I grigi sono campionati dal fotogramma del video, H236 S7. */
 export function SitoVecchio() {
   return (
-    <div className="strato vecchio" data-strato="vecchio">
+    <div className="strato strato-riquadro vecchio" data-strato="vecchio">
       <div className="v-testata" data-parte="a">
         <b>La Tua Azienda</b>
         <span>visite: 004213</span>
@@ -88,7 +88,7 @@ export function Tessere() {
     }
   }
   return (
-    <div className="strato tessere" data-strato="tessere">
+    <div className="strato strato-riquadro tessere" data-strato="tessere">
       {celle}
     </div>
   );
@@ -98,7 +98,7 @@ export const QUANTE_PARTICELLE = 70;
 
 export function Particelle() {
   return (
-    <div className="strato particelle" data-strato="particelle">
+    <div className="strato strato-riquadro particelle" data-strato="particelle">
       {Array.from({ length: QUANTE_PARTICELLE }, (_, i) => (
         <i
           key={i}
@@ -125,7 +125,7 @@ const FORME = [
 
 export function Wireframe() {
   return (
-    <div className="strato" data-strato="wire">
+    <div className="strato strato-riquadro" data-strato="wire">
       <svg className="wire-svg" viewBox="0 0 620 349" preserveAspectRatio="none" aria-hidden="true">
         {FORME.map(([x, y, w, h]) => (
           <rect
@@ -149,7 +149,7 @@ export function Wireframe() {
 export function SitoNuovo({ mobile = false }: { mobile?: boolean }) {
   return (
     <div
-      className={`strato nuovo${mobile ? ' nuovo-m' : ''}`}
+      className={`strato nuovo ${mobile ? 'strato-telefono nuovo-m' : 'strato-riquadro'}`}
       data-strato={mobile ? 'nuovo-m' : 'nuovo'}
     >
       <div className="n-barra">
@@ -183,7 +183,7 @@ export function SitoNuovo({ mobile = false }: { mobile?: boolean }) {
 export function Schermate() {
   const s5 = sezioni.s5;
   return (
-    <div className="strato schermate" data-strato="schermate">
+    <div className="strato strato-telefono schermate" data-strato="schermate">
       <div className="nastro" data-parte="nastro">
         <div className="schermo">
           <p className="s-tit">Ciao, Marco</p>
@@ -223,15 +223,24 @@ export function Schermate() {
 
 /* ------------------------------------------------------------------ S8 --- */
 /** Il telefono si distende e torna rettangolo: dentro, al posto delle
- *  schermate, ci sono i campi. E' la chiusura del cerchio — l'oggetto che si e'
- *  guardato trasformarsi per tutta la pagina e' la cosa in cui si scrive. */
+ *  schermate, c'e' il DISEGNO del modulo. Resta un disegno — aria-hidden,
+ *  nessun elemento che prenda il fuoco — e dura poco: nell'ultimo quarto di S8
+ *  si ritira e al suo posto, nello stesso rettangolo e sulla stessa riga
+ *  dell'azione, arriva la cosa vera (components/sections/Sezioni.tsx). Un
+ *  modulo finto e uno vero a schermo insieme, nel punto in cui si converte,
+ *  sarebbero due inviti di cui uno non si puo' usare ne' raggiungere col Tab. */
 export function Modulo() {
   const m = sezioni.s8.modulo;
   return (
-    <div className="strato modulo" data-strato="modulo" aria-hidden="true">
-      <span className="campo">{m.nome}</span>
-      <span className="campo">{m.email}</span>
-      <span className="campo campo-alto">{m.messaggio}</span>
+    <div className="strato strato-riquadro modulo" data-strato="modulo" aria-hidden="true">
+      {/* Due fasce, le stesse del foglio vero: quella che si legge e quella che
+          si tocca. Il contenitore serve solo a tenere i tre riquadri disegnati
+          in una riga sola della griglia. */}
+      <div className="modulo-campi">
+        <span className="campo">{m.nome}</span>
+        <span className="campo">{m.email}</span>
+        <span className="campo campo-alto">{m.messaggio}</span>
+      </div>
       <span className="campo-invia">{m.invia}</span>
     </div>
   );

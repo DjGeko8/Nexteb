@@ -4,16 +4,17 @@
    Chi arriva qui ha finito di guardare: la cosa da fare e' una sola, quindi
    sta da sola e grande. Apre lo stesso pannello della testata — i recapiti
    stanno scritti in un posto solo, e si correggono in un posto solo.
-   =========================================================================== */
 
-.chiusura {
-  position: relative;
-  z-index: 4;
-  display: grid;
-  place-items: center;
-  padding: clamp(6rem, 18vh, 12rem) 1.5rem clamp(5rem, 14vh, 9rem);
-  background: linear-gradient(180deg, transparent, var(--color-nero) 22%);
-}
+   Qui stava anche `.chiusura`: un gradiente di leggibilita' rimasto da quando
+   il bottone aveva una sezione sua, non usato da nessun componente e per giunta
+   a z-index 4, cioe' SOPRA il pannello — l'avrebbe steso anche sul testo che
+   doveva proteggere. E' stata cancellata, non riesumata: ora il bottone sta
+   DENTRO il riquadro, su --color-abisso, dove il contrasto e' un numero
+   (5,06:1 col testo scuro) e non dipende dal fotogramma. Del gradiente e'
+   rimasto solo il letto sotto il piede, in app/sezioni.css, dove l'aritmetica
+   dice che serve davvero. Lasciare CSS morto che somiglia alla soluzione
+   giusta e' il modo in cui la stessa regola viene reinventata una terza volta.
+   =========================================================================== */
 
 .bottone-grande {
   position: relative;
@@ -54,6 +55,11 @@
   .bottone-grande:hover::after { opacity: 1; }
 }
 
+/* L'anello di fuoco e' --color-nebbia con 3px di stacco, e lo stacco e'
+   portante: sul riempimento del bottone --color-nebbia farebbe 1,96:1, sotto il
+   3:1 richiesto. Con l'offset l'anello cade tutto sul fondo che lo circonda —
+   ora --color-abisso, dentro il riquadro — e fa 9,30:1. Non togliere
+   l'outline-offset per "pulire". */
 .bottone-grande:focus-visible {
   outline: 2px solid var(--color-nebbia);
   outline-offset: 3px;

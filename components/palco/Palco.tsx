@@ -28,7 +28,15 @@ import {
   Wireframe,
 } from './Strati';
 import { caricaPlugin } from '@/lib/gsap';
-import { SEZIONI, fin, fra, misureTelefono, px, type IdSezione } from '@/lib/racconto';
+import {
+  SEZIONI,
+  fin,
+  fra,
+  misureRiquadro,
+  misureTelefono,
+  px,
+  type IdSezione,
+} from '@/lib/racconto';
 
 type Props = {
   videoRef: React.RefObject<HTMLVideoElement | null>;
@@ -62,10 +70,6 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
     const guscioTel = scocca.current?.querySelector<SVGRectElement>('[data-guscio]') ?? null;
     const tacca = scocca.current?.querySelector<SVGLineElement>('[data-tacca]') ?? null;
 
-    if (guscioTel) {
-      const L = guscioTel.getTotalLength?.() ?? 1000;
-      guscioTel.style.setProperty('--len', String(L));
-    }
     tacca?.style.setProperty('--len', '50');
 
     /* ----------------------------------------------------- primitive --- */
@@ -93,19 +97,123 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
     const parte = (nome: string) => q<HTMLElement>(`[data-parte="${nome}"]`);
 
     /**
-     * Le misure del telefono, scritte come variabili sul telaio.
+     * IL CANALE VERSO IL FINALE — due numeri, e basta.
      *
-     * Servono agli strati impaginati alla larghezza del telefono invece che a
-     * quella del telaio. Prima erano container query: facevano la stessa cosa
-     * ma ririsolvevano a ogni fotogramma, e con la conversazione che si scrive
-     * dentro bastavano a bloccare il renderer. Qui si calcolano quando la
-     * finestra cambia, cioe' quasi mai.
+     * Lo stato del telaio (apertura, scala, opacita') vive sulle custom
+     * property del guscio e del ritaglio, e il finale non discende da nessuno
+     * dei due: non puo' leggerlo. Invece di allargare quelle variabili a tutto
+     * il documento — che vorrebbe dire invalidare la radice sessanta volte al
+     * secondo — il palco scrive due soli numeri, e li scrive SULLA SEZIONE che
+     * li usa:
+     *   --scoperto  quanto il fondo del pannello finale si e' ritirato
+     *   --consegna  quanto la cosa vera ha preso il posto del disegno
+     *
+     * Li scrive SOLO l'atto s8, e s7 li rimette a zero. Dove non li scrive
+     * nessuno le variabili non esistono e il CSS cade sui ripieghi 0 e 1, cioe'
+     * sulla pagina di oggi: pannello opaco, contenuto visibile. E' il verso
+     * giusto proprio nei casi che nessuno prova — JavaScript spento, il chunk
+     * di ./plugin che non arriva, il fondo pagina raggiunto con un salto — dove
+     * `html.js` c'e' GIA' e una guardia appesa a lui non scatterebbe, mentre il
+     * palco e' rimasto al fotogramma di atto.hero(0): video a tutto schermo.
+     * Per la stessa ragione non si infila `scopri` dentro `vis`: vis(1) lo
+     * chiama anche atto.hero(0), che gira sempre.
      */
-    const misura = () => {
-      const m = misureTelefono(g.offsetWidth, g.offsetHeight);
-      t.style.setProperty('--tel-w', px(g.offsetWidth - m.lato * 2));
-      t.style.setProperty('--tel-h', px(g.offsetHeight));
+    const sezFinale = document.querySelector<HTMLElement>('[data-sezione="s8"]');
+    let consegnato = '';
+    const scopri = (v: number) => sezFinale?.style.setProperty('--scoperto', v.toFixed(3));
+    const consegna = (v: number) => {
+      sezFinale?.style.setProperty('--consegna', v.toFixed(3));
+      // Il bottone vero non deve essere premibile mentre il foglio e'
+      // invisibile, ma la soglia sta in BASSO e non in alto: con una soglia
+      // alta resterebbe una finestra di scorrimento in cui la capsula si vede
+      // quasi piena, si tocca e non succede niente — nel punto di conversione e
+      // senza nemmeno uno stato hover a smentirlo. Meglio un bersaglio appena
+      // visibile che funziona. L'attributo si riscrive solo quando cambia
+      // davvero: e' uno stato, non un fotogramma.
+      const stato = v > 0.01 ? 'si' : 'no';
+      if (sezFinale && consegnato !== stato) {
+        consegnato = stato;
+        sezFinale.dataset.consegnato = stato;
+      }
     };
+
+    /**
+     * Nel ramo a movimento ridotto una dissolvenza diventa uno SCATTO: qui lo
+     * scorrimento non muove un disegno, muove il testo vero e l'unica chiamata
+     * all'azione, e la regola del progetto dice che nel ramo ridotto
+     * un'animazione non si spegne — si sostituisce con qualcosa che comunica lo
+     * stesso stato. Si rilegge a ogni fotogramma, quindi segue la preferenza
+     * anche se cambia a sito aperto.
+     */
+    const menoMoto = matchMedia('(prefers-reduced-motion: reduce)');
+    const dissolve = (v: number) => (menoMoto.matches ? (v >= 0.5 ? 1 : 0) : v);
+
+    /**
+     * LE DUE MISURE, calcolate in un posto solo.
+     *
+     * Il palco e' grande quanto lo schermo. Il RIQUADRO e' la finestra 16:9 in
+     * cui vive il racconto; il TELEFONO e' quello che il riquadro diventa. Le
+     * due misure servono sia al ritaglio (in JavaScript) sia all'impaginazione
+     * degli strati (in CSS), e se divergessero il disegno si vedrebbe a fette.
+     * Per questo si scrivono come variabili sulla radice: una fonte, tanti
+     * lettori — il palco, gli strati, e chi sta fuori dal palco.
+     *
+     * Prima erano container query: facevano la stessa cosa ma ririsolvevano a
+     * ogni fotogramma, e con la conversazione che si scrive dentro bastavano a
+     * bloccare il renderer. Qui si calcolano quando la finestra cambia.
+     */
+    let RQ = misureRiquadro(g.offsetWidth, g.offsetHeight);
+    let TEL = misureTelefono(g.offsetWidth, g.offsetHeight);
+
+    /** Dove siamo, per poter ridipingere dopo un ridimensionamento. */
+    const ultimo = { id: 'hero' as IdSezione, p: 0 };
+    /** Riempita quando `atto` esiste: misura() gira anche prima. */
+    let ridipingi = () => {};
+
+    const misura = () => {
+      const w = g.offsetWidth;
+      const h = g.offsetHeight;
+      if (!w || !h) return;
+      RQ = misureRiquadro(w, h);
+      TEL = misureTelefono(w, h);
+      // Sulla RADICE, non sul guscio: le stesse misure servono anche a chi sta
+      // fuori dal palco — il finale deve potersi allineare al riquadro senza
+      // riscriversi i numeri per conto suo, che e' esattamente il modo in cui
+      // CSS e JavaScript cominciano a divergere.
+      const r = document.documentElement.style;
+      r.setProperty('--rq-w', px(RQ.w));
+      r.setProperty('--rq-h', px(RQ.h));
+      r.setProperty('--tel-w', px(TEL.w));
+      r.setProperty('--tel-h', px(TEL.h));
+      vestiScocca();
+      // Il ritaglio e' scritto in pixel: dopo un ridimensionamento quei pixel
+      // sono di un'altra finestra. Si ridipinge il punto in cui siamo, se no
+      // il telaio resta della misura di prima finche' non si scorre.
+      ridipingi();
+    };
+
+    /**
+     * La scocca prende il viewBox dalla misura vera del telefono.
+     *
+     * Con un viewBox fisso e `preserveAspectRatio="none"` il tratto si
+     * deformerebbe — spesso sui lati corti, sottile su quelli lunghi — e gli
+     * angoli si ovalizzerebbero. Cosi' invece il rapporto combacia sempre.
+     */
+    const vestiScocca = () => {
+      const sv = scocca.current;
+      if (!sv || !guscioTel || !tacca) return;
+      const w = TEL.w;
+      const h = TEL.h;
+      sv.setAttribute('viewBox', `0 0 ${w.toFixed(1)} ${h.toFixed(1)}`);
+      guscioTel.setAttribute('x', '0.75');
+      guscioTel.setAttribute('y', '0.75');
+      guscioTel.setAttribute('width', Math.max(0, w - 1.5).toFixed(1));
+      guscioTel.setAttribute('height', Math.max(0, h - 1.5).toFixed(1));
+      tacca.setAttribute('x1', (w / 2 - 25).toFixed(1));
+      tacca.setAttribute('x2', (w / 2 + 25).toFixed(1));
+      guscioTel.style.setProperty('--len', String(guscioTel.getTotalLength?.() ?? 1000));
+    };
+
     misura();
     // ResizeObserver e non solo 'resize': al primo giro il guscio non ha ancora
     // la misura definitiva (i caratteri devono ancora arrivare) e le variabili
@@ -135,20 +243,38 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
 
     /* ------------------------------------------------------ sezioni --- */
     const atto: Record<IdSezione, (p: number) => void> = {
+      /**
+       * Il video si apre A TUTTO SCHERMO, e nell'ultima meta' della hero lo
+       * schermo si CHIUDE sul riquadro.
+       *
+       * Prima qui c'era un `scala(1 -> 0.94)`: allontanava il telaio mentre si
+       * usciva. A tutto schermo la stessa cosa scoprirebbe il fondo sui
+       * quattro lati — una cornice nera che compare dal niente. Chiudere il
+       * ritaglio dice la stessa cosa (il filmato si fa da parte) senza mai
+       * staccare il video dai bordi, e consegna alla sezione dopo un riquadro
+       * gia' della misura giusta.
+       */
       hero(p) {
+        const chiude = fin(p, 0.5, 1);
         mostra({ video: 1 });
-        clip(0, 0, 0, 0, 6);
+        clip(
+          fra(0, RQ.lato, chiude),
+          fra(0, RQ.lato, chiude),
+          fra(0, RQ.vert, chiude),
+          fra(0, RQ.vert, chiude),
+          fra(0, 6, chiude),
+        );
         vis(1);
-        scala(fra(1, 0.94, fin(p, 0.55, 1)), 0);
+        scala(1, 0);
         disegnaScocca(0, 0);
       },
 
       s1(p) {
         const d = fin(p, 0, 0.25);
         mostra({ video: 1 - d, vecchio: d });
-        clip(0, 0, 0, 0, 6);
+        clip(RQ.lato, RQ.lato, RQ.vert, RQ.vert, 6);
         vis(1);
-        scala(fra(0.94, 1, fin(p, 0, 0.3)), 0);
+        scala(1, 0);
 
         // i livelli scivolano fuori allineamento: il sito non si rompe di
         // colpo, si scolla — che e' come invecchiano davvero
@@ -171,7 +297,7 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
           tessere: opTessere,
           particelle: opParticelle,
         });
-        clip(0, 0, 0, 0, 6);
+        clip(RQ.lato, RQ.lato, RQ.vert, RQ.vert, 6);
         vis(1);
         scala(1, 0);
 
@@ -209,7 +335,7 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
           wire: fin(p, 0, 0.08) * (1 - fin(p, 0.6, 0.85)),
           nuovo: fin(p, 0.45, 0.75),
         });
-        clip(0, 0, 0, 0, 6);
+        clip(RQ.lato, RQ.lato, RQ.vert, RQ.vert, 6);
         vis(1);
         scala(1, 0);
         rettangoli.forEach((r, i) => {
@@ -220,7 +346,6 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
       },
 
       s4(p) {
-        const m = misureTelefono(g.offsetWidth, g.offsetHeight);
         const stretta = fin(p, 0.15, 0.45);
         const incrocio = fin(p, 0.45, 0.6);
         const disegno = fin(p, 0.55, 0.8);
@@ -228,10 +353,10 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
 
         mostra({ nuovo: 1 - incrocio, 'nuovo-m': incrocio });
         clip(
-          fra(0, m.lato, stretta),
-          fra(0, m.lato, stretta),
-          fra(0, m.vert, stretta),
-          fra(0, m.vert, stretta),
+          fra(RQ.lato, TEL.lato, stretta),
+          fra(RQ.lato, TEL.lato, stretta),
+          fra(RQ.vert, TEL.vert, stretta),
+          fra(RQ.vert, TEL.vert, stretta),
           fra(6, 24, stretta),
         );
         // la barra del browser si spegne per prima: da qui non e' piu' "un
@@ -246,15 +371,16 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
       },
 
       s5(p) {
-        const m = misureTelefono(g.offsetWidth, g.offsetHeight);
         mostra({ 'nuovo-m': 1 - fin(p, 0, 0.12), schermate: fin(p, 0, 0.12) });
-        clip(m.lato, m.lato, m.vert, m.vert, 24);
+        clip(TEL.lato, TEL.lato, TEL.vert, TEL.vert, 24);
         scala(0.86, -16);
         vis(1 - fin(p, 0.92, 1));
         disegnaScocca(1, 1);
 
         const avanz = fin(p, 0.08, 0.95);
-        parte('nastro')?.style.setProperty('--y', (avanz * 4 * g.offsetHeight).toFixed(1));
+        // quattro schermate, e una schermata e' alta quanto il TELEFONO — non
+        // quanto lo schermo, che ora e' tutt'altra misura
+        parte('nastro')?.style.setProperty('--y', (avanz * 4 * TEL.h).toFixed(1));
 
         // la conversazione si scrive: e' HTML, non un'immagine
         // Riscrivere textContent forza il layout: si tocca solo quando il
@@ -280,24 +406,66 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
 
       s7() {
         vis(0);
+        // Il fondo del finale torna pieno e il foglio si spegne PRIMA che S8
+        // entri in scena. Il palcoscenico di S8 e' appiccicato in cima alla sua
+        // sezione, quindi claim e bottone salgono da sotto gia' nell'ultima
+        // mezza schermata di S7: senza queste due righe comparirebbero a piena
+        // opacita' sopra il pannello del Metodo per poi spegnersi di scatto.
+        scopri(0);
+        consegna(0);
       },
 
+      /**
+       * TRE TEMPI, non un guizzo.
+       *
+       *   1. p 0,10 -> 0,46 — il telefono si riapre nel riquadro. Sono 43vh di
+       *      scorrimento contro i 21 di prima: con la corsa a 50vh la chiusura
+       *      del cerchio durava, in pixel scrollati, un quinto dello smontaggio
+       *      di S2. Il disegno del modulo entra DURANTE l'apertura, non dopo,
+       *      cosi' la finestra che si allarga scopre una cosa che c'e' gia' —
+       *      prima fra l'uscita delle schermate e l'ingresso del modulo
+       *      restavano venti vh di rettangolo vuoto, che e' il modo piu' rapido
+       *      di far sembrare una trasformazione un errore di caricamento.
+       *   2. p 0,46 -> 0,62 — a geometria ferma il modulo si TIENE, da solo, al
+       *      centro dello schermo: l'unico momento della pagina in cui S8 e'
+       *      sola in campo.
+       *   3. p 0,62 -> 0,78 — LA CONSEGNA. Un numero solo governa il cambio: il
+       *      disegno esce e la cosa vera entra, nello stesso rettangolo e sulla
+       *      stessa riga dell'azione. Da 0,78 a 1 non si muove piu' niente, e
+       *      non per pigrizia: la pagina si chiude su un fotogramma stabile
+       *      anche dove il fondo pagina non coincide al pixel con p=1 (iOS).
+       *
+       * `scopri` e `vis` sono lo stesso numero: il pannello del finale si
+       * ritira esattamente mentre il telaio si accende, quindi i due cambi si
+       * leggono come uno solo e non c'e' nessun lampo al giunto con S7. E
+       * siccome `mostra` qui mette il video a 0, non esiste un fotogramma in
+       * cui il pannello sia trasparente e dietro ci sia il filmato.
+       */
       s8(p) {
-        const m = misureTelefono(g.offsetWidth, g.offsetHeight);
-        const apre = fin(p, 0.12, 0.55);
-        mostra({ schermate: 1 - fin(p, 0.1, 0.35), modulo: fin(p, 0.18, 0.5) });
+        const vista = fin(p, 0.02, 0.12);
+        const apre = fin(p, 0.1, 0.46);
+        const passa = dissolve(fin(p, 0.62, 0.78));
+
+        mostra({
+          schermate: 1 - fin(p, 0.08, 0.26),
+          modulo: fin(p, 0.2, 0.4) * (1 - passa),
+        });
         clip(
-          fra(m.lato, 0, apre),
-          fra(m.lato, 0, apre),
-          fra(m.vert, 0, apre),
-          fra(m.vert, 0, apre),
+          fra(TEL.lato, RQ.lato, apre),
+          fra(TEL.lato, RQ.lato, apre),
+          fra(TEL.vert, RQ.vert, apre),
+          fra(TEL.vert, RQ.vert, apre),
           fra(24, 6, apre),
         );
         disegnaScocca(1 - apre, 1 - apre);
         scala(fra(0.86, 1, apre), fra(-16, 0, apre));
-        vis(fin(p, 0.04, 0.18));
+        vis(vista);
+        scopri(vista);
+        consegna(passa);
       },
     };
+
+    ridipingi = () => atto[ultimo.id](ultimo.p);
 
     /* -------------------------------------------------- registrazione --- */
     let vivo = true;
@@ -305,6 +473,8 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
 
     caricaPlugin().then(({ ScrollTrigger }) => {
       if (!vivo) return;
+
+      const ultima = SEZIONI[SEZIONI.length - 1]!.id;
 
       for (const { id } of SEZIONI) {
         const bersaglio = document.querySelector<HTMLElement>(`[data-sezione="${id}"]`);
@@ -316,10 +486,19 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
           // utile e- (altezza sezione - altezza schermo), cioe- 30vh su una
           // sezione da 130vh — l-animazione sfreccia e finisce subito. Cosi-
           // invece l-avanzamento dura esattamente quanto la sezione.
+          //
+          // L-ULTIMA fa eccezione, e non per gusto: 'bottom top' vorrebbe che
+          // il fondo della sezione salisse fino in cima allo schermo, ma sotto
+          // non c-e- piu- pagina da scorrere. Il documento finisce prima, e
+          // l-avanzamento si ferma a un terzo — l-ultimo atto non arriva mai
+          // in fondo, senza che niente lo segnali. Per l-ultima sezione il
+          // finale raggiungibile e- 'bottom bottom'.
           start: 'top top',
-          end: 'bottom top',
+          end: id === ultima ? 'bottom bottom' : 'bottom top',
           scrub: true,
           onUpdate: (self) => {
+            ultimo.id = id;
+            ultimo.p = self.progress;
             atto[id](self.progress);
             titolo(id, self.progress);
             avvisa.current(id, self.progress);
@@ -359,16 +538,12 @@ export function Palco({ videoRef, pronto, onTempo, onSezione }: Props) {
         </div>
 
         {/* La scocca sta FUORI dal telaio ritagliato: dentro verrebbe tagliata
-            anche lei, ed e' proprio il bordo che deve restare intero. */}
-        <svg
-          className="scocca"
-          ref={scocca}
-          viewBox="0 0 620 349"
-          preserveAspectRatio="none"
-          aria-hidden="true"
-        >
-          <rect data-guscio x="230" y="0" width="160" height="349" rx="24" ry="24" />
-          <line data-tacca x1="285" y1="13" x2="335" y2="13" />
+            anche lei, ed e' proprio il bordo che deve restare intero.
+            Misure e viewBox li scrive `vestiScocca` dalla misura vera del
+            telefono — qui ci sono solo i valori del primo fotogramma. */}
+        <svg className="scocca" ref={scocca} viewBox="0 0 155 349" aria-hidden="true">
+          <rect data-guscio x="0.75" y="0.75" width="153.5" height="347.5" rx="24" ry="24" />
+          <line data-tacca x1="52.5" y1="13" x2="102.5" y2="13" />
         </svg>
       </div>
     </div>

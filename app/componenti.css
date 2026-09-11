@@ -154,10 +154,15 @@
   perspective: 1200px;
   pointer-events: none;
 }
+/* IL GUSCIO E' IL VIEWPORT. Il video nasce a tutto schermo e da li' il telaio
+   si stringe: prima al riquadro del racconto, poi al telefono. Non si scala
+   mai niente — si cambia quanta parte del palco si vede.
+   `inset: 0` e non `100dvw/100dvh`: le unita' viewport comprendono la barra di
+   scorrimento e basterebbero a generare una barra orizzontale; il palco e'
+   gia' fisso a tutto schermo, quindi la misura giusta ce l'ha lui. */
 .telaio-guscio {
-  position: relative;
-  width: min(62vw, 980px);
-  aspect-ratio: 16 / 9;
+  position: absolute;
+  inset: 0;
   pointer-events: auto;
   transform: scale(var(--scala, 1)) translate3d(0, var(--alza, 0px), 0)
              rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
@@ -167,7 +172,6 @@
 /* will-change solo MENTRE si muove, e sparisce con esso: un will-change
    permanente su un elemento grande e- memoria video occupata a vuoto. */
 .telaio-guscio[data-animando="si"] { will-change: transform; }
-@media (max-width: 900px) { .telaio-guscio { width: 88vw; } }
 
 .telaio {
   position: absolute;
@@ -190,7 +194,10 @@
 }
 .barra-capitoli {
   position: absolute;
-  inset: auto 14px 12px 14px;
+  bottom: 12px;
+  left: 50%;
+  width: calc(var(--rq-w, 980px) - 28px);
+  transform: translateX(-50%);
   display: flex;
   gap: 5px;
   z-index: 3;

@@ -36,6 +36,20 @@ cambia contenuto, proporzioni e distanza fino a diventare il modulo di contatto.
 `position: fixed`, quindi **non serve nessun pin di ScrollTrigger** — niente si aggancia
 perché niente si è mai sganciato.
 
+**Il palco è grande quanto lo schermo.** Il video si apre a tutto schermo; nella seconda metà
+della hero il ritaglio si chiude sul *riquadro* (16:9, 62vw), che è la finestra in cui vive il
+racconto; in S4 lo stesso ritaglio si stringe fino al *telefono* (9:19,5). Non si scala mai
+niente: si cambia quanta parte del palco si vede, con `clip-path: inset()`. Una scala non
+uniforme schiaccerebbe il contenuto, una uniforme non potrebbe cambiare le proporzioni.
+
+Le due misure le calcola `lib/racconto.ts` (`misureRiquadro`, `misureTelefono`) e il palco le
+scrive sulla **radice** come `--rq-w/--rq-h` e `--tel-w/--tel-h`: **una fonte, tanti lettori** — il
+ritaglio in JavaScript, l'impaginazione degli strati in CSS, e il finale, che sta fuori dal palco e
+deve allinearsi al riquadro senza riscriversi i numeri per conto suo. Se divergessero, il disegno si vedrebbe a
+fette. Solo il video è a tutta pagina: gli altri strati sono disegni tarati sulla larghezza del
+riquadro, e stirarli a tutto schermo li ridurrebbe a una pagina vuota con la scritta piccola in
+mezzo — quindi restano della loro misura, centrati, e il ritaglio li scopre.
+
 ```
 app/            layout, pagina, fogli di stile
   globals.css     LA FONTE DEI TOKEN: colori, caratteri, durate, curve
@@ -56,6 +70,37 @@ scripts/          i cancelli
 public/media/     video codificati e poster
 ```
 
+### La fine
+
+S8 è l'unica sezione che lascia vedere il palco, ed è dove il racconto chiude il cerchio: il
+telefono si riapre nel riquadro, il disegno del modulo si tiene un momento da solo, poi si ritira e
+al suo posto — **nello stesso rettangolo e sulla stessa riga dell'azione** — arrivano la frase vera
+e l'unico bottone vero. Prima quella coreografia si svolgeva dietro il fondo opaco di `.pannello` e
+non l'aveva vista mai nessuno.
+
+Tre cose la reggono, e nessuna è cosmetica:
+
+- **il palcoscenico appiccicato** (`.finale-palco`, `position: sticky; height: 100dvh`). Il palco è
+  centrato nel *viewport*, il contenuto di una sezione più alta di uno schermo è centrato nella
+  *sezione*: i due centri erano sfalsati di **metà della corsa**. Non è un margine sbagliato, è
+  aritmetica — ed è il motivo per cui S8 non si era mai potuta allungare (allungarla peggiorava lo
+  sfasamento della metà di quel che guadagnava). Con lo sticky i due centri coincidono a ogni
+  avanzamento e a ogni finestra, e S8 è passata da 150 a 220vh: la corsa utile da 50 a 120vh;
+- **la griglia condivisa.** `--linea-azione` e `--aria-riquadro` stanno in `globals.css` e le
+  leggono *sia* il disegno dentro il telaio (`app/palco.css`) *sia* il foglio vero
+  (`app/sezioni.css`). Per questo «il bottone atterra dove stava la capsula» è una proprietà del
+  codice e non una coincidenza misurata una volta;
+- **il ripiego.** `--scoperto` e `--consegna` li scrive solo l'atto `s8`, sulla sola sezione che li
+  usa. Dove non li scrive nessuno il CSS cade su `0` e `1`, cioè fondo pieno e contenuto visibile.
+  Il caso pericoloso non è «JavaScript spento» — lì `html.js` non c'è e le guardie scattano — ma
+  «JavaScript acceso e il pezzo di GSAP non arrivato», o il fondo pagina raggiunto con un salto:
+  casi in cui il palco è rimasto al primo fotogramma, cioè al **poster** del video, dove il bianco
+  farebbe 1,88:1.
+
+Il piede sta fuori dal foglio, su un letto di `--color-nero`: i dati obbligatori vogliono un fondo
+di luminanza nota e nessun movimento sopra. Vanno giudicati **con i `tbd()` addosso** — in quel
+stato il tratteggio li porta a 4,64:1 sul letto, e sarebbero stati 4,49:1 sul fondo del riquadro.
+
 ---
 
 ## Sostituire le cose
@@ -67,24 +112,35 @@ public/media/     video codificati e poster
 | **Contatti** | `content/it.ts` → `contatti`, sostituendo i `tbd()` |
 | **Colori** | `app/globals.css`, blocco `@theme`. Mai dentro un componente |
 | **Capitoli del video** | `config/hero.ts` |
+| **Misure di riquadro e telefono** | `lib/racconto.ts`. Mai duplicate in CSS |
 | **Endpoint del form** | variabile `NEXT_PUBLIC_FORM_ENDPOINT` |
 | **Dominio** | variabile `NEXT_PUBLIC_SITO` (senza, resta `.invalid` e il sito non si indicizza) |
 
 ### Sostituire il video
 
-Il montaggio si rifà con due comandi, dalla cartella `../intro`:
+Il montaggio si rifà con due comandi dalla cartella `../intro`, poi uno da qui:
 
 ```bash
-bash monta-intro.sh      # monta le 7 clip: 1 → 3 → 2 → 4 → 5 → 6 (tagliato) → 7
-bash grada-vecchio.sh    # porta il sito vecchio in grigio-blu, sfuma testa e coda
+bash ../intro/monta-intro.sh    # monta le 7 clip: 1 → 3 → 2 → 4 → 5 → 6 (tagliato) → 7
+bash ../intro/grada-vecchio.sh  # porta il sito vecchio in grigio-blu
+npm run media                   # da lì alle tre codifiche + il poster
 ```
 
-Poi si copiano le uscite in `public/media/` e si aggiornano i capitoli in `config/hero.ts`.
+`npm run media` scrive in `public/media/` due copie dello stesso filmato — **largo** (1600 px,
+per lo schermo grande dove il video sta a tutto schermo) e **stretto** (1280, sotto gli 820 px
+di finestra) — più il poster. Poi si aggiornano durata e capitoli in `config/hero.ts`.
+
+Perché due copie e non una: **Cloudflare non serve richieste parziali sugli asset statici**, il
+file si scarica sempre intero, anche da chi se ne va dopo tre secondi. Ogni megabyte è pagato
+da tutti. Ma con il video a tutto schermo una copia stretta ingrandita si vede — la finta
+interfaccia dentro il filmato ha testo piccolo, ed è la prima cosa che si sfalda.
 
 Due cose da sapere sul filmato attuale:
 
-- **entra dal nero e si spegne nel nero**, quindi `loop` basta e il giro non ha stacco. La
-  continuità è risolta nel file, non con un espediente nella pagina;
+- **il giro non passa dal nero.** Testa e coda avevano una dissolvenza dal nero, messa perché
+  il ciclo non avesse stacco: insieme duravano quasi un secondo, e a ogni giro quel secondo si
+  leggeva come una pausa. Tolte — l'ultima scena e la prima sono entrambe scure, quindi lo
+  stacco diretto regge da sé;
 - **dal secondo 28,3 porta il testo impresso dentro** — «Vuole viverlo», i tre vantaggi,
   «Web. App. Esperienza.», il claim e il bottone disegnato. La sovrimpressione del sito tace
   da lì in poi. Se il video cambia, `sovrimpressioneFinoA` in `config/hero.ts` è l'unico

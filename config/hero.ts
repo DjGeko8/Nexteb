@@ -17,21 +17,35 @@ export type Capitolo = {
 
 export const hero = {
   /**
-   * Le sorgenti, in ordine di preferenza: il browser prende la PRIMA che sa
-   * leggere, non la migliore. Per questo il 720p sta davanti.
+   * LE SORGENTI, IN ORDINE. Il browser prende la PRIMA che sa leggere e la cui
+   * `media` corrisponde — non la migliore. Quindi l'ordine e' la scelta.
    *
-   * Il telaio non supera i 980 px di larghezza, quindi il 1080p non servirebbe
-   * a nessuno e costerebbe 3,4 MB in piu' a ogni visita. Conta piu' del solito
-   * perche' Cloudflare NON serve richieste parziali sugli asset statici: il
-   * file si scarica sempre INTERO, anche a chi se ne va dopo tre secondi.
+   * Prima qui c'erano DUE elenchi, `sorgenti` e `sorgentiMobile`, e il secondo
+   * non lo leggeva nessuno: il componente mappava solo il primo. Finche' in
+   * testa c'era la copia stretta il telefono la prendeva per caso; il giorno
+   * che l'ordine e' cambiato si e' ritrovato a scaricare la copia larga, cioe'
+   * tre megabyte in piu' sulla connessione peggiore, senza un errore da nessuna
+   * parte. Un campo che nessuno legge non e' codice morto innocuo: e' una
+   * decisione che sembra presa e non lo e'. Un elenco solo, e la condizione
+   * scritta accanto alla riga a cui si applica.
+   *
+   * `media` e' verificato sul campo, non dedotto: dentro <video> la selezione
+   * della risorsa lo rispetta davvero (provato con soglie sopra e sotto la
+   * larghezza della finestra, restituisce le due copie giuste).
+   *
+   * Perche' due copie. Il video sta A TUTTO SCHERMO: su un portatile una copia
+   * stretta ingrandita si vede, e la prima cosa che si sfalda e' il testo
+   * piccolo della finta interfaccia dentro il filmato. Sotto gli 820 px quei
+   * pixel non li vedrebbe nessuno e la connessione e' quasi sempre peggiore.
+   * Il peso conta piu' del solito perche' Cloudflare NON serve richieste
+   * parziali sugli asset statici: il file si scarica sempre INTERO, anche da
+   * chi se ne va dopo tre secondi.
    */
   sorgenti: [
-    { src: '/media/intro-720.mp4', type: 'video/mp4' },
-    { src: '/media/intro-1080.webm', type: 'video/webm' },
-  ],
-  /** Sotto questa larghezza si serve il 720p: meno della meta' dei byte. */
-  sorgentiMobile: [{ src: '/media/intro-720.mp4', type: 'video/mp4' }],
-  larghezzaMobile: 820,
+    { src: '/media/intro-stretto.mp4', type: 'video/mp4', media: '(max-width: 820px)' },
+    { src: '/media/intro-largo.webm', type: 'video/webm' },
+    { src: '/media/intro-largo.mp4', type: 'video/mp4' },
+  ] as ReadonlyArray<{ src: string; type: string; media?: string }>,
 
   /**
    * Il poster e' l'elemento LCP. NON e' il primo fotogramma: il montaggio
@@ -43,8 +57,14 @@ export const hero = {
 
   durata: 38.17,
 
-  /** Il filmato gira in continuo: testa e coda sfumano dal nero, quindi il
-   *  giro non ha stacco e non serve nessun espediente nella pagina. */
+  /**
+   * Il filmato gira in continuo, e il giro NON passa dal nero.
+   *
+   * Prima testa e coda avevano una dissolvenza dal nero, messa perche' il
+   * ciclo non avesse stacco: insieme duravano quasi un secondo, e a ogni giro
+   * quel secondo si leggeva come una pausa. Tolte. L'ultima scena e la prima
+   * sono entrambe scure, quindi lo stacco diretto regge da se'.
+   */
   inCiclo: true,
 
   /** Punto d'interesse per il ritaglio su schermi stretti (0-1). */

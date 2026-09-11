@@ -58,6 +58,33 @@
   /* Deve restare in pari con ATTESA_MASSIMA in components/layout/Preloader.tsx */
   --tetto-preloader: 8s;
 
+  /* LA GRIGLIA DEL FINALE — due fasce dentro il riquadro: sopra quello che si
+     legge, sotto quello che si tocca. Sta QUI perche' i lettori sono due: il
+     DISEGNO del modulo dentro il telaio (app/palco.css) e il FOGLIO vero del
+     finale (app/sezioni.css). Se il numero stesse in tutti e due, il giorno che
+     uno cambia il bottone vero atterrerebbe ACCANTO alla capsula disegnata
+     invece che sopra, e nessuno se ne accorgerebbe finche' non si guarda il
+     fotogramma della consegna. */
+  --linea-azione: 62%;
+
+  /* L'aria dentro il riquadro. NON in percentuale: una percentuale di padding
+     si risolve sulla larghezza del BLOCCO CONTENITORE — qui il palco e la
+     sezione, cioe' lo schermo — non sul riquadro. Sotto i 1581px di finestra le
+     due cose coincidono per caso; sopra, --rq-w si ferma a 980 mentre il
+     padding continua a crescere con lo schermo, e su un ultrawide la fascia
+     della lettura si stringe fino a mandare il claim SOPRA il bottone (misurato
+     a 3440x1440: 69,8px di sovrapposizione). Qui sono frazioni del riquadro. */
+  --aria-riquadro: calc(var(--rq-h, 34.45rem) * .085) calc(var(--rq-w, 61.25rem) * .05);
+
+  /* La capsula disegnata "Invia richiesta" e il bottone vero "Contattaci" sono
+     la stessa capsula: stesso blu, stesso centro, stessa misura. Le due
+     frazioni sono il bottone vero misurato a 1440x900 (254x78) riportato sul
+     riquadro di quella finestra (883,5x497). Senza, la capsula disegnata resta
+     in stretch — 855px per 32 — e la dissolvenza legge come un bottoncino
+     appoggiato su una barra, non come una cosa che diventa vera. */
+  --capsula-w: calc(var(--rq-w, 61.25rem) * .288);
+  --capsula-h: calc(var(--rq-h, 34.45rem) * .157);
+
   /* la sorgente di luce: una sola per tutto il documento */
   --sheen-x: 50%;
   --luce-x: 50%;

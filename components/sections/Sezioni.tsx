@@ -166,25 +166,47 @@ function Finale({ onContatti }: { onContatti: () => void }) {
 
   return (
     <section className="pannello finale-sez" data-sezione="s8" style={{ height: altezza('s8') }}>
-      <div className="contenitore finale">
-        <p className="claim">{sezioni.s8.claim}</p>
+      {/* IL PALCOSCENICO E' UNA SCHERMATA E STA FERMO: `sticky`, non un pin.
+          La corsa dell'appiccicamento e' (220vh - una schermata), cioe' la
+          stessa corsa utile che ScrollTrigger da' a S8 — non c'e' nessun numero
+          da tenere in pari. Senza, il contenuto sarebbe centrato nella SEZIONE
+          e il telaio nel VIEWPORT, sfalsati di meta' corsa, e il piede cadrebbe
+          sul primo campo del disegno a ogni misura di schermo. */}
+      <div className="finale-palco">
+        {/* IL FOGLIO E' IL RIQUADRO. Stessa misura, stesso centro, stessa
+            griglia del disegno che se ne sta andando: il bottone vero atterra
+            dove stava la capsula "Invia richiesta". E il testo sta su
+            --color-abisso, una tinta dei token: 17,87:1 il claim, 5,06:1 il
+            bottone — numeri che non dipendono dal fotogramma del video. */}
+        <div className="finale-foglio">
+          <p className="claim">{sezioni.s8.claim}</p>
 
-        <button
-          type="button"
-          className="bottone-grande"
-          onClick={onContatti}
-          onPointerMove={seguiCursore}
-        >
-          {eroe.contattaci}
-        </button>
+          <button
+            type="button"
+            className="bottone-grande"
+            onClick={onContatti}
+            onPointerMove={seguiCursore}
+          >
+            {eroe.contattaci}
+          </button>
+        </div>
 
-        <footer className="piede">
-          <span className={eSegnaposto(ragione) ? 'tbd' : undefined}>{ragione}</span>
-          <span className={eSegnaposto(piva) ? 'tbd' : undefined}>P.IVA {piva}</span>
-          <a href="/privacy/">{piede.privacy}</a>
-          <a href="/cookie/">{piede.cookie}</a>
-          <span>{piede.anno}</span>
-        </footer>
+        {/* Il piede sta FUORI dal foglio, appoggiato al fondo dello schermo e su
+            un letto di --color-nero largo quanto il palcoscenico: i dati
+            obbligatori vogliono un fondo di luminanza nota e nessun movimento
+            sopra. Li' fanno 7,66:1, e 4,64:1 finche' ragione sociale e P.IVA
+            portano addosso il tratteggio di .tbd (opacita' .75). Sul fondo del
+            riquadro, nello stesso stato, scenderebbero a 4,49:1 — sotto soglia.
+            E non si spengono mai: la consegna tocca solo il foglio. */}
+        <div className="finale-fascia">
+          <footer className="piede">
+            <span className={eSegnaposto(ragione) ? 'tbd' : undefined}>{ragione}</span>
+            <span className={eSegnaposto(piva) ? 'tbd' : undefined}>P.IVA {piva}</span>
+            <a href="/privacy/">{piede.privacy}</a>
+            <a href="/cookie/">{piede.cookie}</a>
+            <span>{piede.anno}</span>
+          </footer>
+        </div>
       </div>
     </section>
   );

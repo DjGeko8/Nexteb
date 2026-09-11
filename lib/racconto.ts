@@ -19,7 +19,18 @@ export const SEZIONI = [
   { id: 's5', vh: 180 },
   { id: 's6', vh: 130 },
   { id: 's7', vh: 100 },
-  { id: 's8', vh: 150 },
+  // S8 non e' una schermata, sono tre tempi: il telefono si riapre, il modulo
+  // si tiene un momento da solo, la cosa vera prende il suo posto. Con
+  // `end: 'bottom bottom'` la corsa utile dell'ULTIMA sezione e' (altezza -
+  // 100vh): a 150vh erano 50vh per tre tempi — meno della sezione piu' corta
+  // del sito — e il 45% di quei 50vh era gia' immobilita' totale. 220vh ne
+  // lasciano 120, e l'apertura del telefono dura 43vh invece di 21.
+  // Allungarla non scentra piu' niente perche' il contenuto del finale non e'
+  // piu' centrato nella sezione ma appiccicato allo schermo (.finale-palco):
+  // prima le due cose erano legate — il centro stava a V*(1-k/2) e la corsa
+  // valeva V*(k-1), cioe' lo sfasamento era META' della corsa — ed e' il
+  // motivo per cui nessuno aveva mai potuto allungare S8.
+  { id: 's8', vh: 220 },
 ] as const;
 
 export type IdSezione = (typeof SEZIONI)[number]['id'];
@@ -38,18 +49,48 @@ export function px(v: number) {
   return `${v.toFixed(1)}px`;
 }
 
+export type Misure = { lato: number; vert: number; w: number; h: number };
+
 /**
- * Le proporzioni del telefono, ricavate dal telaio invece che scritte a mano.
+ * IL PALCO E' GRANDE QUANTO LO SCHERMO.
  *
- * Il passaggio da 16:9 a 9:19,5 NON e' una scala: una scala non uniforme
- * schiaccerebbe il contenuto. Si ritaglia — si cambia quanta parte del palco
- * si vede — e il contenuto dentro non viene deformato di un pixel.
+ * Il video si apre a tutto schermo; da li' il telaio si stringe fino al
+ * riquadro del racconto e poi fino al telefono. Non si scala mai niente: si
+ * cambia quanta parte del palco si vede, con `clip-path: inset()`. Una scala
+ * non uniforme schiaccerebbe il contenuto, e una uniforme non potrebbe
+ * cambiare le proporzioni.
+ *
+ * Da qui discendono tutte le misure, cosi' CSS e JavaScript non possono
+ * divergere: sono calcolate in un posto solo.
  */
-export function misureTelefono(larghezza: number, altezza: number) {
-  const altezzaVisibile = altezza * 0.96;
-  const larghezzaVisibile = altezzaVisibile * 0.4615; // 9 / 19,5
+
+/** Il riquadro del racconto: 16:9, centrato, come una finestra sul tavolo. */
+export function misureRiquadro(vw: number, vh: number): Misure {
+  const largo = vw < 900 ? vw * 0.9 : Math.min(vw * 0.62, 980);
+  const alto = largo * (9 / 16);
   return {
-    lato: Math.max(0, (larghezza - larghezzaVisibile) / 2),
-    vert: Math.max(0, (altezza - altezzaVisibile) / 2),
+    lato: Math.max(0, (vw - largo) / 2),
+    vert: Math.max(0, (vh - alto) / 2),
+    w: largo,
+    h: alto,
+  };
+}
+
+/**
+ * Il telefono: 9:19,5, alto quanto serve per leggersi come un telefono in
+ * piedi senza toccare i bordi dello schermo.
+ *
+ * 0,68 e non di piu': il titolo della sezione sta in basso, fisso, e su tre
+ * righe arriva a meta' schermo. Un telefono piu' alto ci finisce sotto.
+ */
+export function misureTelefono(vw: number, vh: number): Misure {
+  const r = misureRiquadro(vw, vh);
+  const alto = Math.min(vh * 0.68, r.h * 1.7);
+  const largo = alto * 0.4615; // 9 / 19,5
+  return {
+    lato: Math.max(0, (vw - largo) / 2),
+    vert: Math.max(0, (vh - alto) / 2),
+    w: largo,
+    h: alto,
   };
 }

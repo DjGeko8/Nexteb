@@ -130,8 +130,11 @@ export function VideoHero({ videoRef, pronto, onTempo }: Props) {
         preload="auto"
         aria-label={`Video di presentazione: ${hero.capitoli.map((c) => c.cosa).join(', ')}`}
       >
+        {/* `media` sulla riga a cui si applica: chi ha lo schermo stretto
+            prende la copia stretta PRIMA che il caricamento cominci, senza
+            JavaScript e senza scaricare due volte. */}
         {hero.sorgenti.map((s) => (
-          <source key={s.src} src={s.src} type={s.type} />
+          <source key={s.src} src={s.src} type={s.type} media={s.media} />
         ))}
       </video>
 
