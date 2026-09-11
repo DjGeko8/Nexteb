@@ -2,9 +2,21 @@ import type { Metadata, Viewport } from 'next';
 import { meta } from '@/content/it';
 import './globals.css';
 
-/* Serve a risolvere gli URL assoluti delle anteprime social. Va cambiato con
-   il dominio vero: e- l-unico posto in cui compare. */
-const SITO = process.env.NEXT_PUBLIC_SITO ?? "https://nexteb.invalid";
+/**
+ * Il dominio. Serve a risolvere gli URL assoluti delle anteprime social, ed e'
+ * l'unico posto in cui compare.
+ *
+ * Finche' non e' quello vero si usa un dominio riservato (RFC 2606) e il sito
+ * si pubblica con `noindex`: un'anteprima finita nei motori e' difficile da
+ * togliere, e nel frattempo compete con il sito vero. Si riattiva da solo
+ * appena NEXT_PUBLIC_SITO ha un valore.
+ *
+ * Attenzione: e' una variabile NEXT_PUBLIC_, quindi viene letta AL MOMENTO
+ * DELLA BUILD e finisce dentro l'HTML. Cambiarla nel pannello non basta:
+ * serve una nuova build.
+ */
+const SITO = process.env.NEXT_PUBLIC_SITO ?? 'https://nexteb.invalid';
+const inAnteprima = SITO.includes('.invalid');
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITO),
@@ -17,7 +29,7 @@ export const metadata: Metadata = {
     locale: 'it_IT',
     images: [{ url: '/media/poster.webp', width: 1920, height: 1080, alt: meta.claim }],
   },
-  robots: { index: true, follow: true },
+  robots: inAnteprima ? { index: false, follow: false } : { index: true, follow: true },
 };
 
 export const viewport: Viewport = {

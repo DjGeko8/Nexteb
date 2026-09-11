@@ -16,10 +16,18 @@ export type Capitolo = {
 };
 
 export const hero = {
-  /** Le sorgenti, in ordine di preferenza. Il browser prende la prima che sa leggere. */
+  /**
+   * Le sorgenti, in ordine di preferenza: il browser prende la PRIMA che sa
+   * leggere, non la migliore. Per questo il 720p sta davanti.
+   *
+   * Il telaio non supera i 980 px di larghezza, quindi il 1080p non servirebbe
+   * a nessuno e costerebbe 3,4 MB in piu' a ogni visita. Conta piu' del solito
+   * perche' Cloudflare NON serve richieste parziali sugli asset statici: il
+   * file si scarica sempre INTERO, anche a chi se ne va dopo tre secondi.
+   */
   sorgenti: [
+    { src: '/media/intro-720.mp4', type: 'video/mp4' },
     { src: '/media/intro-1080.webm', type: 'video/webm' },
-    { src: '/media/intro-1080.mp4', type: 'video/mp4' },
   ],
   /** Sotto questa larghezza si serve il 720p: meno della meta' dei byte. */
   sorgentiMobile: [{ src: '/media/intro-720.mp4', type: 'video/mp4' }],
