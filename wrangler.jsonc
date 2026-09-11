@@ -1,0 +1,36 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "nexteb",
+  "compatibility_date": "2026-09-11",
+
+  // Nessun `main`: questo Worker non esegue codice, serve solo file.
+  // Il sito e' un export statico (`output: 'export'` in next.config.mjs),
+  // quindi non c'e' niente da far girare a ogni richiesta — e niente che
+  // possa sforare i 10 ms di CPU o costare a ogni visita.
+  "assets": {
+    "directory": "./out",
+
+    // Il sito ha una pagina sola: qualunque indirizzo sbagliato deve portare
+    // alla 404 generata da Next, non a una pagina bianca di Cloudflare.
+    "not_found_handling": "404-page",
+
+    // `trailingSlash: true` in next.config.mjs genera /cartella/index.html:
+    // questo fa servire /cartella/ senza redirect inutili.
+    "html_handling": "auto-trailing-slash"
+  },
+
+  // Le variabili NON si dichiarano qui.
+  //
+  // Un blocco `vars` in chiaro sostituisce a ogni rilascio quelle impostate
+  // nel pannello: una aggiunta come segreto sparirebbe al primo deploy
+  // successivo, in silenzio. NEXT_PUBLIC_SITO e NEXT_PUBLIC_FORM_ENDPOINT
+  // vanno impostate nelle Settings del Worker, non in questo file.
+  //
+  // Nota: essendo variabili `NEXT_PUBLIC_`, vengono lette al momento della
+  // BUILD e finiscono dentro l'HTML. Cambiarle richiede una nuova build,
+  // non basta salvarle nel pannello.
+
+  "observability": {
+    "enabled": true
+  }
+}

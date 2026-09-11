@@ -3,8 +3,8 @@
 Sito one-page dello studio Nexteb. Un racconto solo, raccontato due volte: il video in
 apertura lo mostra, lo scorrimento lo fa rivivere all'utente.
 
-**Stato: in costruzione.** Impianto, preloader, testata e hero sono fatti. Le sezioni S1–S8
-arrivano nell'ordine della storia.
+**Stato: struttura completa.** Impianto, preloader, testata, hero e le otto sezioni ci sono
+e funzionano. Mancano i dati del cliente e le pagine legali — l'elenco è in fondo.
 
 ---
 
@@ -46,9 +46,12 @@ components/
   brand/          Logo, Luce (la sorgente di luce del documento)
   layout/         Testata, PannelloContatti, Preloader
   hero/           VideoHero, BarraCapitoli, Sovrimpressione
+  palco/          Palco (il telaio e il suo pilota), Strati (cosa c'e' dentro)
+  sections/       Sezioni (le otto corse e i tre pannelli)
 config/hero.ts    sorgenti del video, capitoli, poster
 content/it.ts     TUTTI i testi. Nessuna stringa dentro un componente
-lib/              gsap (nucleo), plugin (a richiesta), lenis, blocco, inerte, segnaposti
+lib/              gsap (nucleo), plugin (a richiesta), lenis, blocco, inerte,
+                  segnaposti, racconto (la mappa delle sezioni)
 scripts/          i cancelli
 public/media/     video codificati e poster
 ```
@@ -115,45 +118,54 @@ motivo è obbligatorio: una deroga senza spiegazione è una svista.
 4. **Il movimento ridotto si ascolta**, non si legge una volta: chi cambia impostazione a
    sito aperto lo vede calmarsi senza ricaricare.
 5. **I plugin di GSAP si caricano a richiesta.** Tenerli nel carico iniziale costava 31 KB
-   gzip per roba che la hero non usa. Il JS iniziale sta a **163,9 KB gzip**, sotto il tetto
+   gzip per roba che la hero non usa. Il JS iniziale sta a **169,0 KB gzip**, sotto il tetto
    di 180.
 
 ---
 
-## Pubblicare su Cloudflare Pages
+## Pubblicare su Cloudflare
 
-Il sito è un export statico: non c'è niente da eseguire sul server, quindi Pages lo serve
-direttamente dai file.
+Il sito è un export statico: **non c'è niente da eseguire sul server**. Il Worker non esegue
+codice, serve solo file — quindi non può sforare i 10 ms di CPU e non costa a ogni visita.
 
-**Impostazioni del progetto** (una volta sola, nel pannello Cloudflare):
+La configurazione sta in `wrangler.jsonc` e viaggia con il repository: `assets.directory`
+punta a `out`, `not_found_handling` manda gli indirizzi sbagliati alla 404 generata da Next,
+e `html_handling` serve `/cartella/` senza redirect inutili.
+
+**Impostazioni di Workers Builds** (nel pannello, una volta sola):
 
 | Campo | Valore |
 |---|---|
-| Framework preset | **None** — non Next.js: quello attiverebbe il runtime, che qui non serve |
 | Build command | `npm run build` |
-| Build output directory | `out` |
-| Node version | preso da `.node-version` |
-| Variabile `NEXT_PUBLIC_SITO` | il dominio vero, es. `https://nexteb.it` |
-| Variabile `NEXT_PUBLIC_FORM_ENDPOINT` | l'indirizzo a cui il modulo invia |
+| Deploy command | `npx wrangler deploy` |
+| Root directory | `/` |
+| Versione di Node | presa da `.node-version` |
 
-Senza `NEXT_PUBLIC_SITO` il sito usa `nexteb.invalid` e **resta fuori dai motori di ricerca**:
-è voluto, così un'anteprima non finisce indicizzata per sbaglio.
+**Variabili**, da impostare nelle Settings del Worker:
+
+| Variabile | Cosa fa |
+|---|---|
+| `NEXT_PUBLIC_SITO` | il dominio vero. **Senza, il sito si pubblica con `noindex`** — è voluto: un'anteprima indicizzata è difficile da togliere dai motori |
+| `NEXT_PUBLIC_FORM_ENDPOINT` | l'indirizzo a cui il modulo invia |
+
+Attenzione a una cosa che sorprende sempre: essendo variabili `NEXT_PUBLIC_`, vengono lette
+**al momento della build** e finiscono dentro l'HTML. Cambiarle nel pannello non basta —
+serve una nuova build.
+
+E per la stessa ragione `wrangler.jsonc` **non dichiara alcun blocco `vars`**: un blocco in
+chiaro nel file sostituisce a ogni rilascio quelle impostate nel pannello, e una variabile
+aggiunta come segreto sparirebbe al primo deploy successivo, in silenzio.
 
 `public/_headers` viaggia con la build e porta la CSP e le regole di cache: file con
 l'impronta nel nome per sempre, video un mese. La CSP non ammette **nessun dominio di terzi**
-— è ciò che tiene vera l'assenza del banner cookie, e va cambiata solo aggiungendo
-consapevolmente ciò che serve.
+— è ciò che tiene vera l'assenza del banner cookie.
 
-**Il collegamento fra GitHub e Cloudflare si fa dal pannello** (Workers & Pages → Create →
-Pages → Connect to Git) e richiede di autorizzare l'app Cloudflare su GitHub: non è una cosa
-che si possa creare da riga di comando, perché l'autorizzazione è personale. Fatto una volta,
-ogni `git push` su `main` pubblica da solo.
+Per pubblicare a mano, da locale: `npm run cf:deploy`.
 
 ---
 
 ## Cosa manca
 
-- Sezioni S1–S8
 - Ragione sociale e P.IVA (bloccanti: `npm run verifica-segnaposto` esce con errore)
 - Email, telefono, WhatsApp, zona di lavoro
 - Endpoint del form, o ripiego `mailto:`
