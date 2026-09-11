@@ -1,0 +1,381 @@
+/* ===========================================================================
+   Stili dei componenti. I token stanno in globals.css e non si duplicano qui.
+   Le durate e le curve arrivano tutte da li': `npm run verifica-movimento`
+   fallisce se qualcuno ne scrive una a mano.
+   =========================================================================== */
+
+/* ---------------------------------------------------------------------------
+   L'ALONE — la sorgente di luce resa visibile
+   --------------------------------------------------------------------------- */
+.alone {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: var(--alone, 0);
+  transition: opacity var(--durata-ingresso) var(--ease-stato);
+  background: radial-gradient(420px 420px at var(--luce-x) var(--luce-y),
+    rgba(93, 123, 212, .20), rgba(56, 86, 170, .07) 45%, transparent 70%);
+}
+
+/* ---------------------------------------------------------------------------
+   IL MARCHIO
+   --------------------------------------------------------------------------- */
+.logo { display: inline-flex; align-items: center; gap: .28em; }
+.logo-segno { width: 1em; height: 1em; color: var(--color-vivo); display: block; }
+.logo-parola {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 120%;
+  letter-spacing: -.03em;
+  color: var(--color-bianco);
+}
+.logo-iniziale { color: var(--color-vivo); }
+
+/* ---------------------------------------------------------------------------
+   TESTATA — trasparente in ogni stato, destra vuota di proposito
+   --------------------------------------------------------------------------- */
+.testata {
+  position: fixed;
+  inset: 0 0 auto 0;
+  z-index: 40;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: clamp(.9rem, 2vh, 1.4rem) clamp(1rem, 3vw, 2.5rem);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity var(--durata-ingresso) var(--ease-entrata);
+}
+.testata[data-visibile="si"] { opacity: 1; }
+.testata button { pointer-events: auto; }
+
+.testata-contatti {
+  justify-self: end;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  font-family: var(--font-testo);
+  font-size: .9rem;
+  color: var(--color-nebbia);
+  text-shadow: 0 1px 14px rgba(2, 6, 17, .95);
+}
+.testata-contatti::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -3px 0;
+  height: 1px;
+  background: var(--color-vivo);
+  transform: scaleX(0);
+  transform-origin: 0 50%;
+  transition: transform var(--durata-componente) var(--ease-entrata);
+}
+@media (hover: hover) and (pointer: fine) {
+  .testata-contatti:hover::after { transform: scaleX(1); }
+}
+
+.testata-marchio {
+  justify-self: center;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  font-size: clamp(1rem, 2.2vw, 1.3rem);
+  text-shadow: 0 1px 14px rgba(2, 6, 17, .95);
+}
+.testata-marchio .logo-segno {
+  transition: transform var(--durata-componente) var(--ease-entrata);
+}
+@media (hover: hover) and (pointer: fine) {
+  .testata-marchio:hover .logo-segno { transform: translateY(-2px) rotate(-6deg); }
+}
+
+/* ---------------------------------------------------------------------------
+   PRELOADER
+
+   Il velo si toglie anche se il JavaScript non parte MAI: l'animazione di
+   sicurezza lo solleva a 8 s comunque. E' la ragione per cui questa pagina non
+   puo' restare nera — che e' esattamente il difetto del sito d'autore da cui
+   viene l'idea, nero pieno su tutte e ventidue le pagine senza JS.
+   --------------------------------------------------------------------------- */
+.preloader {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  background: var(--color-nero);
+  /* movimento-ok: il ritardo NON e' una durata di componente, e' il tetto di
+     sicurezza del preloader e deve restare in pari con ATTESA_MASSIMA in
+     Preloader.tsx. Il primo valore e' 1ms perche' lo scatto dev'essere
+     istantaneo: questa animazione non anima, sblocca. */
+  animation: velo-sicurezza 1ms linear var(--tetto-preloader) forwards;
+}
+@keyframes velo-sicurezza {
+  to { transform: translateY(-101%); visibility: hidden; }
+}
+.preloader[data-uscita="si"] {
+  animation: none;
+  transform: translateY(-101%);
+  /* movimento-ok: l'uscita del preloader e' l'unico momento orchestrato del
+     sito ed e' piu' lungo di qualunque transizione di componente. La curva e'
+     simmetrica apposta — parte e finisce lenta — perche' e' un sipario, non un
+     cambio di stato. Resta l'unica deroga al vocabolario. */
+  transition: transform var(--durata-sipario) var(--ease-sipario);
+}
+.preloader-centro { display: grid; gap: 1.6rem; justify-items: center; }
+.preloader-logo { font-size: clamp(1.6rem, 5vw, 2.6rem); }
+.preloader-barra {
+  width: min(210px, 46vw);
+  height: 1px;
+  background: var(--color-cupo);
+  overflow: hidden;
+}
+.preloader-barra i {
+  display: block;
+  height: 100%;
+  background: var(--color-vivo);
+  transform-origin: 0 50%;
+  transition: transform var(--durata-componente) linear;
+}
+
+/* ---------------------------------------------------------------------------
+   IL PALCO E IL TELAIO
+   Fisso: niente pin di ScrollTrigger, perche' niente si e' mai sganciato.
+   --------------------------------------------------------------------------- */
+.palco {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  perspective: 1200px;
+  pointer-events: none;
+}
+.telaio-guscio {
+  position: relative;
+  width: min(62vw, 980px);
+  aspect-ratio: 16 / 9;
+  pointer-events: auto;
+  transform: scale(var(--scala, 1)) translate3d(0, var(--alza, 0px), 0)
+             rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg));
+  transform-style: preserve-3d;
+  opacity: var(--vis, 1);
+}
+/* will-change solo MENTRE si muove, e sparisce con esso: un will-change
+   permanente su un elemento grande e- memoria video occupata a vuoto. */
+.telaio-guscio[data-animando="si"] { will-change: transform; }
+@media (max-width: 900px) { .telaio-guscio { width: 88vw; } }
+
+.telaio {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-abisso);
+  clip-path: inset(var(--t, 0px) var(--r, 0px) var(--b, 0px) var(--l, 0px) round var(--rad, 6px));
+}
+
+/* ---------------------------------------------------------------------------
+   HERO
+   --------------------------------------------------------------------------- */
+.hero-video { position: absolute; inset: 0; }
+.hero-video-el {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: 50% 42%;
+  display: block;
+}
+.barra-capitoli {
+  position: absolute;
+  inset: auto 14px 12px 14px;
+  display: flex;
+  gap: 5px;
+  z-index: 3;
+  opacity: 0;
+  transition: opacity var(--durata-componente) var(--ease-stato);
+}
+.barra-capitoli[data-visibile="si"] { opacity: 1; }
+.barra-capitoli button {
+  flex: 1;
+  height: 16px;
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  display: block;
+}
+.barra-capitoli button::before,
+.barra-capitoli button::after {
+  content: "";
+  position: absolute;
+  bottom: 5px;
+  left: 0;
+  height: 2px;
+  transition: height var(--durata-micro) var(--ease-stato),
+              bottom var(--durata-micro) var(--ease-stato);
+}
+.barra-capitoli button::before { right: 0; background: rgba(171, 181, 214, .28); }
+.barra-capitoli button::after {
+  width: calc(var(--p, 0) * 100%);
+  background: var(--color-vivo);
+}
+@media (hover: hover) and (pointer: fine) {
+  .barra-capitoli button:hover::before,
+  .barra-capitoli button:hover::after { height: 4px; bottom: 4px; }
+}
+.barra-etichetta {
+  position: absolute;
+  bottom: 22px;
+  left: 0;
+  font-family: var(--font-mono);
+  font-size: .6rem;
+  letter-spacing: .06em;
+  color: var(--color-bianco);
+  background: rgba(2, 6, 17, .92);
+  border: 1px solid var(--color-cupo);
+  padding: .16rem .45rem;
+  white-space: nowrap;
+  opacity: 0;
+  transform: translateY(4px);
+  transition: opacity var(--durata-micro), transform var(--durata-micro) var(--ease-entrata);
+  pointer-events: none;
+}
+.barra-etichetta[data-on="si"] { opacity: 1; transform: none; }
+
+.hero-controlli {
+  position: absolute;
+  bottom: 34px;
+  right: 14px;
+  display: flex;
+  gap: .4rem;
+  z-index: 3;
+}
+.hero-controlli button {
+  background: rgba(2, 6, 17, .55);
+  border: 1px solid var(--color-cupo);
+  color: var(--color-nebbia);
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: .6rem;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: color var(--durata-micro), border-color var(--durata-micro);
+}
+@media (hover: hover) and (pointer: fine) {
+  .hero-controlli button:hover { color: var(--color-bianco); border-color: var(--color-vivo); }
+}
+
+.invito-scorri {
+  position: fixed;
+  inset: auto 0 2.2rem 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: .62rem;
+  letter-spacing: .18em;
+  text-transform: uppercase;
+  color: var(--color-chiaro);
+  opacity: 0;
+  transition: opacity var(--durata-componente) var(--ease-stato);
+  pointer-events: none;
+  z-index: 5;
+}
+.invito-scorri[data-visibile="si"] { opacity: 1; }
+
+.corsa { position: relative; }
+
+/* ---------------------------------------------------------------------------
+   PANNELLO CONTATTI — entrata e uscita scritte due volte.
+   Il ritardo di `visibility` usa la STESSA variabile della durata: due numeri
+   gemelli divergono alla prima modifica senza produrre nessun errore.
+   --------------------------------------------------------------------------- */
+.contatti-velo {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(2, 6, 17, .74);
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity var(--durata-micro) var(--ease-uscita),
+              visibility 0s linear var(--durata-micro);
+}
+.contatti-velo[data-aperto="si"] {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--durata-componente) var(--ease-entrata), visibility 0s;
+}
+
+.contatti-pannello {
+  position: fixed;
+  inset: 0 auto 0 0;
+  z-index: 60;
+  width: min(420px, 88vw);
+  background: var(--color-nero);
+  border-right: 1px solid var(--color-cupo);
+  padding: clamp(1.6rem, 5vh, 3rem) clamp(1.3rem, 4vw, 2.4rem);
+  display: grid;
+  align-content: start;
+  gap: 1rem;
+  clip-path: inset(0 100% 0 0);
+  visibility: hidden;
+  transition: clip-path var(--durata-micro) var(--ease-uscita),
+              visibility 0s linear var(--durata-micro);
+}
+.contatti-pannello[data-aperto="si"] {
+  clip-path: inset(0 0 0 0);
+  visibility: visible;
+  transition: clip-path var(--durata-componente) var(--ease-entrata), visibility 0s;
+}
+.contatti-chiudi {
+  justify-self: end;
+  background: none;
+  border: 1px solid var(--color-cupo);
+  color: var(--color-nebbia);
+  font-family: var(--font-mono);
+  font-size: .68rem;
+  padding: .3rem .7rem;
+  border-radius: 2px;
+  cursor: pointer;
+}
+.contatti-titolo {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 118%;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  line-height: 1;
+  letter-spacing: -.025em;
+  margin: 0;
+  color: var(--color-bianco);
+}
+.contatti-testo { margin: 0; color: var(--color-chiaro); font-size: .95rem; max-width: 34ch; }
+.contatti-elenco { display: grid; gap: .7rem; margin-top: .6rem; }
+.contatti-voce { margin: 0; display: grid; gap: .1rem; }
+
+/* La terza voce tipografica: i dati che il visitatore puo' verificare smettono
+   di sembrare testo. Ricavata dal sans gia' presente, nessun font in piu'. */
+.contatti-etichetta {
+  font-family: var(--font-display);
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .14em;
+  font-size: clamp(.68rem, .8vw, .76rem);
+  color: var(--color-chiaro);
+}
+.contatti-voce a {
+  color: var(--color-bianco);
+  text-decoration: none;
+  border-bottom: 1px solid var(--color-blu);
+}
+.contatti-modulo {
+  margin-top: .8rem;
+  color: var(--color-vivo);
+  font-size: .9rem;
+  text-decoration: none;
+  border-bottom: 1px solid currentColor;
+  justify-self: start;
+}

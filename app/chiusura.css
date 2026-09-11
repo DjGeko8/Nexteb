@@ -1,0 +1,60 @@
+/* ===========================================================================
+   LA CHIUSURA — il bottone in fondo alla pagina.
+
+   Chi arriva qui ha finito di guardare: la cosa da fare e' una sola, quindi
+   sta da sola e grande. Apre lo stesso pannello della testata — i recapiti
+   stanno scritti in un posto solo, e si correggono in un posto solo.
+   =========================================================================== */
+
+.chiusura {
+  position: relative;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  padding: clamp(6rem, 18vh, 12rem) 1.5rem clamp(5rem, 14vh, 9rem);
+  background: linear-gradient(180deg, transparent, var(--color-nero) 22%);
+}
+
+.bottone-grande {
+  position: relative;
+  overflow: hidden;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 116%;
+  letter-spacing: -.01em;
+  font-size: clamp(1.05rem, .9rem + .9vw, 1.5rem);
+  color: var(--color-nero);
+  background: var(--color-vivo);
+  border: 0;
+  border-radius: 100px;
+  padding: clamp(.9rem, 2.2vh, 1.25rem) clamp(2rem, 5vw, 3.4rem);
+  cursor: pointer;
+  transition: transform var(--durata-micro) var(--ease-stato);
+}
+
+/* Il testo scuro sul blu vivo fa 5,06:1. Il bianco sullo stesso blu farebbe
+   3,78:1 e non passerebbe: nel concept i bottoni hanno testo bianco, ed e' il
+   solo punto in cui la tavolozza del video va corretta invece che seguita. */
+
+/* Il bagliore insegue il puntatore DENTRO il bottone: e' l'unico movimento al
+   passaggio del mouse che si concede alla chiamata all'azione. */
+.bottone-grande::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(110px 110px at var(--cx, 50%) 50%,
+    rgba(255, 255, 255, .5), transparent 70%);
+  transition: opacity var(--durata-micro) var(--ease-stato);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .bottone-grande:hover { transform: translateY(-2px); }
+  .bottone-grande:hover::after { opacity: 1; }
+}
+
+.bottone-grande:focus-visible {
+  outline: 2px solid var(--color-nebbia);
+  outline-offset: 3px;
+}

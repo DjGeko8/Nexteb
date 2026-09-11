@@ -1,0 +1,205 @@
+@import "tailwindcss";
+@import "./componenti.css";
+@import "./titoli.css";
+@import "./chiusura.css";
+
+/* ============================================================================
+   FONTE UNICA DEI TOKEN
+
+   La palette non e' stata scelta: e' stata estratta con palettegen da 84
+   fotogrammi delle 7 clip del video. Tutto il filmato vive su una tinta sola,
+   blu fra 215 e 226 gradi — perfino il nero, che non e' neutro.
+   Fra parentesi il contrasto misurato sul fondo --nero.
+
+   Un valore nuovo si aggiunge QUI e si motiva. Mai dentro un componente:
+   `npm run verifica-movimento` fa fallire la verifica se lo si scrive a mano.
+   ============================================================================ */
+@theme {
+  --color-nero:    #020611;  /* fondo. Blu, non neutro: H224                 */
+  --color-abisso:  #051122;  /* fondo dentro il telaio                       */
+  --color-notte:   #0A183D;  /* superfici sollevate                          */
+  --color-cupo:    #132355;  /* riempimenti profondi, bordi                  */
+  --color-blu:     #3856AA;  /* 2,97:1 — riempimenti e bordi, MAI testo      */
+  --color-vivo:    #5D7BD4;  /* 5,06:1 — l'accento. Regge il testo           */
+  --color-chiaro:  #8D9FC9;  /* 7,65:1 — testo secondario                    */
+  --color-nebbia:  #ABB5D6;  /* 9,95:1                                       */
+  --color-bianco:  #F9F8FA;  /* 19,13:1 — testo principale                   */
+
+  /* Il sito vecchio. Campionato dal fotogramma gradato a 1,6 s: H236 S7.
+     Non e' beige: spezzava la grafica. Vive solo nella sezione del "prima". */
+  --color-grigio:   #B6B7C2;
+  --color-grigio-2: #8D8E9B;
+
+  --font-display: "Archivo", "Helvetica Neue", Arial, sans-serif;
+  --font-testo:   "Instrument Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono:    "DM Mono", ui-monospace, Consolas, monospace;
+
+  /* Tre durate e tre curve per tutto il sito, nominate per ruolo.
+     Il tetto e' rigido: e' cio' che fa muovere il sito "con una mano sola". */
+  --animate-duration-micro:      140ms;
+  --animate-duration-componente: 260ms;
+  --animate-duration-ingresso:   520ms;
+}
+
+:root {
+  --durata-micro: 140ms;
+  --durata-componente: 260ms;
+  --durata-ingresso: 520ms;
+  --ease-entrata: cubic-bezier(.16, 1, .3, 1);
+  --ease-uscita:  cubic-bezier(.55, 0, .85, .2);
+  --ease-stato:   cubic-bezier(.4, 0, .2, 1);
+
+  /* Il sipario del preloader: l'unico momento orchestrato del sito, e l'unica
+     voce fuori dal tetto di tre durate e tre curve. Motivata in componenti.css. */
+  --durata-sipario: 900ms;
+  --ease-sipario: cubic-bezier(.76, 0, .24, 1);
+  /* Deve restare in pari con ATTESA_MASSIMA in components/layout/Preloader.tsx */
+  --tetto-preloader: 8s;
+
+  /* la sorgente di luce: una sola per tutto il documento */
+  --sheen-x: 50%;
+  --luce-x: 50%;
+  --luce-y: 38%;
+
+  color-scheme: dark;
+}
+
+/* ---------------------------------------------------------------------------
+   CARATTERI — self-hosted. Non per velocita': per privacy. Caricarli da un
+   terzo trasferirebbe l'IP del visitatore e riporterebbe il banner cookie su
+   un sito che puo' non averlo.
+   --------------------------------------------------------------------------- */
+@font-face {
+  font-family: "Archivo";
+  src: url("/fonts/Archivo-Variable.woff2") format("woff2-variations");
+  font-weight: 400 900;
+  font-stretch: 62% 125%;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("/fonts/InstrumentSans-Variable.woff2") format("woff2-variations");
+  font-weight: 400 700;
+  font-display: swap;
+  font-style: normal;
+}
+@font-face {
+  font-family: "DM Mono";
+  src: url("/fonts/DMMono-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-display: swap;
+  font-style: normal;
+}
+
+/* ---------------------------------------------------------------------------
+   BASE
+   --------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+html { scrollbar-gutter: stable; }
+
+body {
+  margin: 0;
+  background: var(--color-nero);
+  color: var(--color-nebbia);
+  font-family: var(--font-testo);
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Il fuoco e' sempre visibile. Su contenitori con overflow l'anello va su un
+   pseudo-elemento con inset negativo, o viene ritagliato. */
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--color-vivo);
+  outline-offset: 2px;
+}
+
+/* 16px ASSOLUTI: sotto questa soglia iOS ingrandisce a ogni tocco di un campo.
+   E' l'unico px scritto a mano ammesso nel progetto. Non trasformarlo in token. */
+@media (pointer: coarse) {
+  input, select, textarea { font-size: 16px; }
+}
+
+/* ---------------------------------------------------------------------------
+   MOVIMENTO RIDOTTO
+   .01ms e non `none`: il primo lascia comunque sparare `transitionend`, cosi'
+   le logiche appese alla fine di una transizione non si rompono in silenzio
+   per la sola fetta di utenti che nessuno prova mai.
+   Nessuna animazione puo' degradare a contenuto invisibile.
+   --------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    transition-delay: 0s !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------------------------------------------------------------------------
+   LO STATO BASE E' QUELLO VISIBILE
+   Lo stato nascosto vive solo sotto `html.js`, che mette uno snippet inline
+   prima del primo paint. Senza JavaScript non sparisce niente.
+   --------------------------------------------------------------------------- */
+html.js [data-intro] .entra { opacity: 0; translate: 0 14px; }
+html.js [data-intro="in"] .entra {
+  opacity: 1;
+  translate: none;
+  transition: opacity var(--durata-componente) var(--ease-entrata),
+              translate var(--durata-ingresso) var(--ease-entrata);
+  /* movimento-ok: non sono durate ma SFALSAMENTI. Il gradino di 70 ms e il
+     ritardo iniziale governano l'ordine in cui le cose entrano, non la
+     velocita' con cui si muovono: quella la danno i token qui sopra. */
+  transition-delay: calc(var(--intro-volo, 420ms) * .55 + (var(--passo, 1) - 1) * .07s);
+}
+
+/* Il metallo: la stessa idea dell'argento, sulla tinta del filmato.
+   Colore pieno di ripiego dove background-clip:text non c'e'. */
+.metallo {
+  background: linear-gradient(100deg,
+    var(--color-blu) 0%, var(--color-chiaro) 20%,
+    var(--color-bianco) calc(var(--sheen, 50%) - 7%),
+    #FFFFFF var(--sheen, 50%),
+    var(--color-bianco) calc(var(--sheen, 50%) + 7%),
+    var(--color-chiaro) 80%, var(--color-blu) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: var(--color-bianco);
+  -webkit-text-fill-color: transparent;
+  background-size: 200% 100%;
+  background-position: calc(var(--sheen-x) * -1 + 100%) 0;
+}
+@supports not ((background-clip: text) or (-webkit-background-clip: text)) {
+  .metallo { color: var(--color-bianco); -webkit-text-fill-color: currentColor; }
+}
+
+/* Il segnaposto di un dato che il cliente non ha ancora dato.
+   `npm run verifica-segnaposto` esce con errore finche' ne resta uno legale. */
+.tbd {
+  outline: 1px dashed var(--color-vivo);
+  outline-offset: 2px;
+  opacity: .75;
+}
+
+/* ---------------------------------------------------------------------------
+   SALTO AL CONTENUTO — visibile solo quando riceve il fuoco
+   --------------------------------------------------------------------------- */
+.salta {
+  position: fixed;
+  top: .6rem;
+  left: .6rem;
+  z-index: 100;
+  transform: translateY(-160%);
+  background: var(--color-vivo);
+  color: var(--color-nero);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: .85rem;
+  padding: .55rem 1rem;
+  border-radius: 4px;
+  text-decoration: none;
+  transition: transform var(--durata-componente) var(--ease-entrata);
+}
+.salta:focus-visible { transform: none; }

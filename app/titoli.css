@@ -1,0 +1,49 @@
+/* ===========================================================================
+   I TITOLI — un posto solo, sotto il telaio, per tutta la pagina.
+   La sovrimpressione del video e i titoli delle sezioni compaiono qui: cosi'
+   l'occhio non deve cercare la parola in punti diversi a ogni sezione.
+   =========================================================================== */
+
+.titoli {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.sovrimpressione,
+.titolo-sezione {
+  position: absolute;
+  inset: auto 0 clamp(4.5rem, 11vh, 8rem) 0;
+  margin: 0;
+  text-align: center;
+  padding: 0 5vw;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-stretch: 118%;
+  letter-spacing: -.025em;
+  line-height: 1;
+  color: var(--color-bianco);
+  font-size: clamp(1.5rem, .9rem + 3.2vw, 3.2rem);
+  text-shadow: 0 2px 28px rgba(2, 6, 17, .85);
+  pointer-events: auto;
+}
+
+/* Le lettere entrano sfalsate di 40 ms e si sollevano sotto il puntatore.
+   Ampiezza 22 px: il movimento lungo e' cio' che fa sembrare l'effetto un
+   plugin. Lo stato base e' quello finale — senza JavaScript il testo c'e'. */
+.lettera {
+  display: inline-block;
+  transform: translateY(var(--onda, 0px));
+  transition: transform var(--durata-componente) var(--ease-entrata);
+}
+html.js .sovrimpressione .lettera {
+  animation: lettera-entra var(--durata-ingresso) var(--ease-entrata) both;
+  /* movimento-ok: sfalsamento fra le lettere, non una durata. 40 ms e' il
+     gradino: piu' lungo e la parola si legge in ritardo su se stessa. */
+  animation-delay: calc(var(--i, 0) * 40ms);
+}
+@keyframes lettera-entra {
+  from { opacity: 0; transform: translateY(22px); }
+  to   { opacity: 1; transform: translateY(var(--onda, 0px)); }
+}
