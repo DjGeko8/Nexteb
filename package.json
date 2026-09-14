@@ -12,7 +12,8 @@
     "verifica-segnaposto": "node scripts/verifica-segnaposto.mjs",
     "media": "bash scripts/encode-hero.sh",
     "cf:deploy": "npm run build && wrangler deploy",
-    "cf:tipi": "wrangler types"
+    "cf:tipi": "wrangler types",
+    "build:campionario": "node scripts/build-campionario.mjs"
   },
   "dependencies": {
     "gsap": "3.13.0",

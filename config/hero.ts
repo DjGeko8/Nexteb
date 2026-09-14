@@ -55,7 +55,9 @@ export const hero = {
   poster: '/media/poster.webp',
   posterAvif: '/media/poster.avif',
 
-  durata: 38.17,
+  /** 31,75 s. Era 38,17 finche' il montaggio incollava le sette clip con sei
+   *  dissolvenze lunghe; ora quattro sono corte e due sono stacchi netti. */
+  durata: 31.75,
 
   /**
    * Il filmato gira in continuo, e il giro NON passa dal nero.
@@ -70,25 +72,38 @@ export const hero = {
   /** Punto d'interesse per il ritaglio su schermi stretti (0-1). */
   fuoco: { x: 0.5, y: 0.42 },
 
+  /**
+   * I capitoli seguono le GIUNZIONI del montaggio, non una divisione a occhio:
+   * 5,375 · 8,959 · 13,500 · 17,500 · 22,750 · 26,208. Sono i punti di taglio
+   * che `cerca-giunzioni.sh` ha trovato in ../intro, quindi una barra che si
+   * sposta qui salta esattamente dove il filmato cambia scena.
+   * Il 5 e il 6 stanno insieme in un capitolo solo: da 22,75 in poi il video
+   * parla da se' e la nostra sovrimpressione tace, quindi un salto li' in mezzo
+   * porterebbe a un pezzo senza titolo.
+   */
   capitoli: [
-    { da: 0,    a: 4.0,   titolo: 'Vecchio. Lento.',      cosa: 'Il sito vecchio' },
-    { da: 4.0,  a: 10.4,  titolo: 'Si smonta.',           cosa: 'La trasformazione' },
-    { da: 10.4, a: 17.1,  titolo: 'Si ricostruisce.',     cosa: 'Il nuovo sito' },
-    { da: 17.1, a: 22.8,  titolo: 'Diventa app.',         cosa: "Dal web all'app" },
-    { da: 22.8, a: 32.1,  titolo: 'Funziona.',            cosa: "L'app in azione" },
-    { da: 32.1, a: 38.17, titolo: '',                     cosa: "L'ecosistema" },
+    { da: 0,     a: 5.375,  titolo: 'Vecchio. Lento.',  cosa: 'Il sito vecchio' },
+    { da: 5.375, a: 8.959,  titolo: 'Si smonta.',       cosa: 'La trasformazione' },
+    { da: 8.959, a: 13.5,   titolo: 'Si ricostruisce.', cosa: 'Il nuovo sito' },
+    { da: 13.5,  a: 17.5,   titolo: 'Diventa app.',     cosa: "Dal web all'app" },
+    { da: 17.5,  a: 22.75,  titolo: 'Funziona.',        cosa: "L'app in azione" },
+    { da: 22.75, a: 31.75,  titolo: '',                 cosa: "L'ecosistema" },
   ] satisfies Capitolo[],
 } as const;
 
 /**
  * Da questo secondo in poi IL VIDEO PARLA DA SOLO: il montaggio porta il testo
  * impresso dentro — «Vuole viverlo», i tre vantaggi, «Web. App. Esperienza.»,
- * il claim e il bottone disegnato. Verificato fotogramma per fotogramma.
+ * il claim e il bottone disegnato. Verificato guardando i fotogrammi: a 22,60
+ * lo schermo e' ancora il telefono in mano, a 23,15 la frase c'e' gia'.
  *
  * Sovrapporre la nostra sovrimpressione li' produce due testi uno sull'altro.
- * Se il filmato cambia, questo e' l'unico numero da rivedere.
+ * Se il filmato cambia, questo e' l'unico numero da rivedere — ed e' cambiato:
+ * era 28,3 sul montaggio da 38,17 s, ora la giunzione che porta la frase e' a
+ * 22,75 e il numero e' un filo prima, perche' la dissolvenza dura otto
+ * fotogrammi e il testo comincia a comparire gia' dentro di essa.
  */
-export const sovrimpressioneFinoA = 28.3;
+export const sovrimpressioneFinoA = 22.6;
 
 /** Nel finale il bottone e' disegnato dentro il video: sopra ci va solo quello
  *  vero e cliccabile, allineato a quello del filmato. */

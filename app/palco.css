@@ -26,7 +26,27 @@
    Il sito vecchio. Grigio-blu, non beige: il caldo spezzava la grafica del
    resto. I valori sono campionati dal fotogramma del video, tinta 236, S7.
    ----------------------------------------------------------------------- */
-.vecchio { background: var(--color-grigio); overflow: hidden; }
+/* IL SITO VECCHIO RIEMPIE IL RIQUADRO.
+   Prima era un blocco che si fermava dov'era finito il contenuto: testata, nav
+   e corpo occupavano il terzo superiore e sotto restavano trecento pixel di
+   grigio vuoto. Si vedeva poco in S1, e in S2 era peggio — trentadue tessere
+   su quarantotto si portavano via il nulla. Qui la pagina e' una griglia a
+   quattro fasce e il corpo prende tutto quello che avanza.
+
+   Le quattro altezze e la larghezza della colonna stanno in --vec-* perche' i
+   lettori sono DUE: questa impaginazione e il disegno che le tessere ritagliano
+   (--dipinto-vecchio, in globals.css). Se divergessero, il sito si spaccherebbe
+   in pezzi di un altro sito. */
+.vecchio {
+  background: var(--color-grigio);
+  overflow: hidden;
+  display: grid;
+  grid-template-rows:
+    calc(var(--vec-testata) * 1%)
+    calc(var(--vec-nav) * 1%)
+    1fr
+    calc(var(--vec-piede) * 1%);
+}
 .v-testata {
   background: #2A2C3B;
   color: #C6C7D1;
@@ -50,20 +70,40 @@
 }
 .v-corpo {
   display: grid;
-  grid-template-columns: 1fr 2fr;
+  grid-template-columns: calc(var(--vec-lato) * 1%) 1fr;
   gap: 8px;
   padding: 8px;
   font-family: Verdana, sans-serif;
+  min-height: 0;
 }
 .v-lato {
   background: #D2D3DC;
   border: 2px outset #9C9DA9;
   padding: 6px;
   display: grid;
+  align-content: start;
   gap: 5px;
 }
 .v-lato span { height: 7px; background: var(--color-grigio-2); display: block; }
-.v-main { display: grid; gap: 6px; }
+/* `align-content: start` e non stretch: le voci di un menu hanno l'altezza che
+   hanno, e stirate su mezzo schermo diventerebbero barre grosse come il banner.
+   E' la colonna a essere alta, non le sue voci. */
+.v-main { display: grid; align-content: start; gap: 6px; min-height: 0; }
+
+/* IL PIEDE. Un sito di quell'epoca lo aveva sempre, con il contatore delle
+   visite: serve a chiudere la pagina in basso invece di lasciarla sfumare nel
+   grigio, ed e' la fascia che da' qualcosa da portare via alle tessere
+   dell'ultima riga. */
+.v-piede {
+  background: #2A2C3B;
+  color: #9C9DA9;
+  font-family: Verdana, sans-serif;
+  font-size: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
 .v-banner {
   background: repeating-linear-gradient(45deg, #D8D9E2 0 8px, #BCBDC8 8px 16px);
   color: #4C4D5B;
@@ -75,13 +115,14 @@
 }
 .v-testo { height: 6px; background: #7E7F8C; }
 .v-img {
-  height: 40px;
+  height: 50px;
   background: linear-gradient(135deg, #9A9BA8, #6E6F7C);
   display: grid;
   place-items: center;
   color: #DDE;
   font-size: 9px;
 }
+.v-img-2 { background: linear-gradient(135deg, #8E8F9C, #62636F); }
 .v-glitch {
   position: absolute;
   inset: 0;
@@ -150,14 +191,44 @@
   display: block;
   border: 1px solid rgba(0, 0, 0, .25);
   transform-style: preserve-3d;
+  /* La finestra ritaglia il disegno: senza, ogni tessera mostrerebbe il sito
+     intero e le quarantotto sarebbero identiche. */
+  overflow: hidden;
+  /* `contain: paint` non e' una ripetizione di `overflow: hidden`: dice al
+     browser che NIENTE di questo elemento dipinge fuori dai suoi bordi, quindi
+     il disegno sotto — grande otto per sei tessere — si rasterizza solo per la
+     fetta che si vede. Senza, quarantotto tessere che ruotano in prospettiva
+     possono chiedere quarantotto texture della pittura intera, e su questa
+     macchina la memoria video non c'e'. E' la stessa famiglia di errori che ha
+     gia' bloccato il renderer due volte. */
+  contain: paint;
 }
+/* IL DISEGNO STA SOTTO, GRANDE OTTO PER SEI TESSERE, e ogni tessera lo scosta
+   di quanto serve a inquadrare la propria fetta. Un pseudo-elemento e non un
+   nodo vero: sono quarantotto, e quarantotto nodi in piu' sono peso di HTML
+   che il palco poi deve anche poter riscrivere a ogni fotogramma. */
+.tessere i::before {
+  content: "";
+  position: absolute;
+  width: calc(100% * 8);
+  height: calc(100% * 6);
+  left: calc(var(--c) * -100%);
+  top: calc(var(--r) * -100%);
+  background: var(--dipinto-vecchio);
+}
+/* Erano settanta punti identici da 2px: una spruzzata uniforme si legge come
+   rumore, non come schegge. La misura e la luce variano per particella (--p,
+   scritto nel markup), cosi' alcune sono vicine e altre lontane e lo sciame ha
+   una profondita'. Niente ombre: sono elementi che si muovono a ogni
+   fotogramma, e un box-shadow su settanta di loro ha gia' bloccato il renderer
+   una volta. */
 .particelle i {
   position: absolute;
   display: block;
-  width: 2px;
-  height: 2px;
+  width: calc(1px + var(--p, 0) * 2.5px);
+  height: calc(1px + var(--p, 0) * 2.5px);
   border-radius: 50%;
-  background: var(--color-vivo);
+  background: color-mix(in oklab, var(--color-vivo) calc(40% + var(--p, 0) * 60%), var(--color-cupo));
   opacity: 0;
 }
 
@@ -172,26 +243,42 @@
 }
 
 /* ------------------------------------------------------------- S3/S4 --- */
+/* IL SITO NUOVO RIEMPIE IL RIQUADRO, come il vecchio. Aveva lo stesso difetto:
+   `align-content: start` e altezze fisse in px, quindi la pagina si fermava a
+   un terzo e sotto restava il fondo. Qui le fasce sono proporzionali — la hero
+   prende una volta e mezzo le schede — e l'altezza la detta il riquadro, non un
+   numero scritto quando il riquadro era un'altra cosa. */
 .nuovo {
   display: grid;
-  align-content: start;
-  gap: 7px;
-  padding: 12px;
+  grid-template-rows: auto minmax(0, 1.5fr) minmax(0, 1fr) auto;
+  gap: 10px;
+  padding: 14px;
   background: var(--color-abisso);
 }
+/* LA REGOLA DELLE SUPERFICI, applicata. Tutti i blocchi qui sotto avevano un
+   riempimento --color-notte su fondo --color-abisso: 1,09:1, cioe' niente. Il
+   contrasto in questa tavolozza non lo fa il riempimento — i quattro fondi
+   scuri stanno entro 1,16 l'uno dall'altro — lo fa il CONTORNO. Vedi la scala
+   in globals.css. */
 .n-barra {
-  height: 18px;
-  background: var(--color-notte);
+  height: 22px;
+  background: var(--color-abisso);
+  border: 1px solid var(--contorno);
   border-radius: 4px;
   display: flex;
   align-items: center;
-  gap: 5px;
+  gap: 6px;
   padding: 0 8px;
 }
-.n-barra i { width: 5px; height: 5px; border-radius: 50%; background: var(--color-blu); display: block; }
+/* I tre pallini passano da --color-blu a --color-vivo: sono l'unico dettaglio
+   della barra, e a 5px un 2,78:1 non basta a farli esistere. */
+.n-barra i { width: 6px; height: 6px; border-radius: 50%; background: var(--contorno-acceso); display: block; }
 .n-hero {
-  height: 128px;
-  background: linear-gradient(120deg, var(--color-cupo), var(--color-notte));
+  min-height: 0;
+  /* Da cupo a NOTTE erano due tinte separate da 1,16: un gradiente che non
+     gradua. Da cupo ad abisso il salto e' 1,26 — poco, ma e' un fondo, e sopra
+     ci sono le barre chiare che fanno il lavoro. */
+  background: linear-gradient(120deg, var(--color-cupo), var(--color-abisso));
   border-radius: 4px;
   display: grid;
   align-content: center;
@@ -211,9 +298,26 @@
 .n-t { height: 11px; width: 62%; background: var(--color-nebbia); border-radius: 2px; }
 .n-s { height: 6px; width: 40%; background: var(--color-blu); border-radius: 2px; }
 .n-b { height: 18px; width: 98px; background: var(--color-vivo); border-radius: 9px; margin-top: 4px; }
-.n-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
-.n-col div { height: 58px; background: var(--color-notte); border-radius: 4px; border: 1px solid var(--color-cupo); }
-.n-rig { height: 5px; background: var(--color-cupo); border-radius: 2px; }
+.n-col { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; min-height: 0; }
+/* Erano tre rettangoli vuoti a 1,09:1 su un fondo quasi identico: il pezzo che
+   piu' faceva leggere il sito nuovo come un segnaposto. Ora hanno un contorno
+   che si vede e qualcosa dentro — un'icona e due righe, che e' il minimo per
+   cui un rettangolo si legge come una scheda invece che come un buco. */
+.n-col div {
+  min-height: 0;
+  background: var(--color-abisso);
+  border-radius: 4px;
+  border: 1px solid var(--contorno);
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 5px;
+  padding: 0 10px;
+}
+.n-col b { width: 14px; height: 14px; border-radius: 3px; background: var(--contorno-acceso); display: block; }
+.n-col u { width: 60%; height: 5px; border-radius: 2px; background: var(--color-nebbia); display: block; }
+.n-col s { width: 88%; height: 4px; border-radius: 2px; background: var(--contorno); display: block; }
+.n-rig { height: 5px; background: var(--contorno); border-radius: 2px; }
 
 /* Lo strato e' gia' largo quanto il telefono (--tel-w, calcolata dal palco:
    le container query facevano la stessa cosa ma ririsolvevano a ogni
@@ -221,14 +325,17 @@
    bloccare il renderer). Qui dentro si ragiona in percentuale. */
 /* Niente `width` qui: la darebbe DOPO .strato-telefono e vincerebbe, ridando
    allo strato la larghezza del palco — cioe' dello schermo. */
-.nuovo-m { padding: 11px; gap: 6px; }
-.nuovo-m .n-barra { height: 15px; }
-.nuovo-m .n-hero { height: 112px; padding: 0 11px; }
+/* La stessa pagina impaginata per il telefono: una colonna sola, e le stesse
+   fasce proporzionali — un telefono con mezzo schermo vuoto sotto sarebbe la
+   stessa svista, solo piu' stretta. */
+.nuovo-m { padding: 11px; gap: 8px; grid-template-rows: auto minmax(0, 1.1fr) minmax(0, 1.4fr) auto; }
+.nuovo-m .n-barra { height: 17px; }
+.nuovo-m .n-hero { padding: 0 11px; }
 .nuovo-m .n-t { width: 84%; }
 .nuovo-m .n-s { width: 60%; }
 .nuovo-m .n-b { width: 100%; }
-.nuovo-m .n-col { grid-template-columns: 1fr; gap: 6px; }
-.nuovo-m .n-col div { height: 38px; }
+.nuovo-m .n-col { grid-template-columns: 1fr; gap: 7px; }
+.nuovo-m .n-col b { width: 12px; height: 12px; }
 
 /* ---------------------------------------------------------------- S5 --- */
 .schermate { overflow: hidden; }
@@ -237,13 +344,69 @@
   inset: 0 0 auto 0;
   transform: translate3d(0, calc(var(--y, 0) * -1px), 0);
 }
+/* L'ultima riga e' la barra di navigazione, che va in fondo: per questo la
+   griglia ha `1fr` prima di lei e il contenuto si distribuisce invece di
+   accucciarsi in alto. Era `align-content: start` con misure in px tarate su un
+   riquadro piu' piccolo — lo stesso difetto del sito vecchio e del sito nuovo,
+   e qui si vedeva come "l'app non ha ancora caricato". */
+/* Colonna FLESSIBILE e non griglia: la barra va in fondo e il resto sta in
+   alto, e in griglia non si fa — `grid-template-rows: auto 1fr auto` con sei
+   figli mette l'1fr sul SECONDO e spinge tutto il resto in basso (misurato:
+   titolo in cima, un buco di trecento pixel, e il resto ammucchiato sotto).
+   In colonna flessibile il margine automatico sulla barra fa esattamente la
+   cosa che sembra: prende tutto lo spazio che avanza. */
 .schermo {
   height: var(--tel-h, 349px);
-  padding: 14px 12px;
-  display: grid;
-  align-content: start;
-  gap: 8px;
+  padding: 14px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
   background: var(--color-abisso);
+}
+.s-barra { margin-top: auto; }
+.s-ok { flex: 1; }
+
+/* La griglia di riquadri della schermata iniziale: quattro scorciatoie, che e'
+   quello che ha in cima ogni app che serva a qualcosa. */
+.s-riquadri { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.s-riquadri i {
+  aspect-ratio: 1.6;
+  border: 1px solid var(--contorno);
+  border-radius: 6px;
+  display: block;
+}
+
+/* LA BARRA IN FONDO. E' il dettaglio che fa leggere un rettangolo come un
+   telefono: quattro voci, una accesa. */
+.s-barra {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+  padding-top: 9px;
+  border-top: 1px solid var(--contorno);
+}
+.s-barra i { height: 6px; border-radius: 3px; background: var(--contorno); display: block; }
+.s-barra i.sel { background: var(--contorno-acceso); }
+
+/* Il bottone pieno della schermata di prenotazione: in una schermata fatta di
+   contorni, il pieno e' l'unica cosa che si legge come "premi qui". */
+.s-pieno {
+  height: 30px;
+  border-radius: 15px;
+  background: var(--contorno-acceso);
+  color: var(--color-nero);
+  display: grid;
+  place-items: center;
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 11px;
+}
+
+/* La riga in cui si scriverebbe, sotto la conversazione. */
+.s-scrivi {
+  height: 26px;
+  border: 1px solid var(--contorno);
+  border-radius: 13px;
 }
 
 .s-tit {
@@ -254,10 +417,20 @@
   font-size: 12px;
   color: var(--color-bianco);
 }
-.s-rig { height: 30px; background: var(--color-notte); border: 1px solid var(--color-cupo); border-radius: 5px; }
-.s-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; }
-.s-cal i { aspect-ratio: 1; background: var(--color-notte); border-radius: 2px; display: block; }
-.s-cal i.sel { background: var(--color-vivo); }
+/* Stessa storia del sito nuovo, e qui era peggio: riga, calendario e bolle
+   erano tutti --color-notte su --color-abisso, cioe' 1,09:1. Il telefono
+   sembrava spento — un titolo bianco e sotto il nulla. */
+.s-rig {
+  height: 32px;
+  background: var(--color-abisso);
+  border: 1px solid var(--contorno);
+  border-radius: 5px;
+}
+.s-cal { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
+.s-cal i { aspect-ratio: 1; background: var(--color-abisso); border: 1px solid var(--contorno); border-radius: 2px; display: block; }
+/* Il giorno scelto e' l'unico pieno: in una schermata dove tutto e' contorno,
+   il pieno e' cio' che l'occhio trova per primo. */
+.s-cal i.sel { background: var(--contorno-acceso); border-color: var(--contorno-acceso); }
 .s-bolla {
   margin: 0;
   max-width: 82%;
@@ -268,9 +441,15 @@
   min-height: 1px;
   opacity: 0;
 }
-.s-bolla.ai { background: var(--color-notte); color: var(--color-nebbia); border-top-left-radius: 2px; }
+.s-bolla.ai {
+  background: var(--color-abisso);
+  border: 1px solid var(--contorno);
+  color: var(--color-nebbia);
+  border-top-left-radius: 2px;
+}
 .s-bolla.io { background: var(--color-vivo); color: var(--color-nero); justify-self: end; border-top-right-radius: 2px; }
-.s-ok { display: grid; place-items: center; gap: 8px; align-content: center; height: 100%; }
+.s-ok { display: grid; place-items: center; gap: 12px; align-content: center; }
+.s-ok .s-rig { width: 80%; }
 .s-cerchio {
   width: 40px;
   height: 40px;

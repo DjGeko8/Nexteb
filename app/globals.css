@@ -58,6 +58,100 @@
   /* Deve restare in pari con ATTESA_MASSIMA in components/layout/Preloader.tsx */
   --tetto-preloader: 8s;
 
+  /* ------------------------------------------------------------------------
+     LA SCALA DELLE SUPERFICI.
+
+     Misurato, non stimato: i quattro fondi scuri della tavolozza sono separati
+     da 1,07 · 1,09 · 1,16 — nero, abisso, notte, cupo. Impilati NON si vedono.
+     Il primo salto vero e' cupo -> blu, 2,20:1. Cioe': in questa tavolozza una
+     scala di grigi scuri non esiste, e gli strati del palco erano scritti come
+     se esistesse — tre blocchi del sito nuovo a 1,09:1, le righe del telefono a
+     1,09:1, il calendario a 1,09:1. Roba disegnata che nessuno poteva vedere.
+
+     La regola che ne discende, e che vale per tutto il palco:
+       una superficie si dichiara col BORDO o col BLU PIENO,
+       mai con un riempimento appena piu' chiaro del fondo.
+     E' anche quello che fa il video: blu pieni e linee luminose su fondo scuro,
+     non grigi scuri impilati.
+
+     I tre gradini, con il contrasto su --color-abisso:
+       contorno         --color-blu    2,78:1   il minimo che si distingue
+       contorno acceso  --color-vivo   4,73:1   quello che l'occhio trova prima
+       testo            --color-nebbia 8,52:1   l'unico che va letto
+     --------------------------------------------------------------------- */
+  --contorno: var(--color-blu);
+  --contorno-acceso: var(--color-vivo);
+
+  /* ------------------------------------------------------------------------
+     LA PIANTA DEL SITO VECCHIO — quattro fasce e una colonna.
+
+     Una fonte, due lettori: l'impaginazione vera (`.vecchio` in palco.css) e il
+     disegno che le tessere di S2 ritagliano (--dipinto-vecchio, qui sotto). Se
+     i numeri stessero in tutti e due, il giorno che uno cambia il sito si
+     spaccherebbe in pezzi di un ALTRO sito, e non se ne accorgerebbe nessuno
+     finche' non si guarda il fotogramma giusto di S2.
+
+     Senza unita': servono sia come percentuali (`calc(var(--vec-nav) * 1%)`)
+     sia come numeri, per calcolare le posizioni dei dettagli qui sotto. ----- */
+  --vec-testata: 7;
+  --vec-nav: 4;
+  --vec-piede: 6;
+  --vec-lato: 30;
+
+  /* ------------------------------------------------------------------------
+     IL DIPINTO DEL SITO VECCHIO — una fonte, quarantotto ritagli.
+
+     Le tessere di S2 avevano un fondo PIATTO scelto a bande (riga 0 scura,
+     riga 1 meno scura, prime due colonne chiare, resto grigio): quando il sito
+     si spaccava non si spaccavano i suoi pezzi, si spaccava una scacchiera di
+     quattro tinte. Qui c'e' UN disegno del sito vecchio e ogni tessera ne
+     mostra la propria fetta — chi prende la testata porta via la testata, chi
+     prende il banner porta via le righe diagonali.
+
+     L'ordine dei livelli fa il lavoro che in CSS non si puo' fare con una
+     maschera: le FASCE stanno sopra la colonna ed sono opache dove devono
+     coprirla, cosi' la colonna puo' essere un gradiente a tutta altezza — che
+     e' esatto — invece di un rettangolo posizionato, che non lo sarebbe.
+
+     I dettagli del corpo (banner, immagine, righe) invece vanno collocati, e le
+     loro posizioni sembrano sbagliate: `background-position` in percentuale e'
+     PROPORZIONALE, non un'ascissa. Per mettere un livello largo W% a distanza
+     L% dal bordo serve p = L / (100 - W) * 100. Da qui il 97,1% che colloca a
+     un terzo dello spazio, non a un millimetro dal bordo destro.
+
+     I grigi sono letterali come dentro `.vecchio`, e per la stessa ragione:
+     sono la citazione di un'altra epoca, non tinte di questo sito. -------- */
+  --dipinto-vecchio:
+    /* le righe di testo del corpo, che si accorciano */
+    linear-gradient(#7E7F8C 0 100%) 97.1% 46% / 66% 1.1% no-repeat,
+    linear-gradient(#7E7F8C 0 100%) 97.1% 51% / 66% 1.1% no-repeat,
+    linear-gradient(#7E7F8C 0 100%) 78.8% 56% / 54% 1.1% no-repeat,
+    linear-gradient(#7E7F8C 0 100%) 97.1% 66% / 66% 1.1% no-repeat,
+    linear-gradient(#7E7F8C 0 100%) 65.9% 71% / 44% 1.1% no-repeat,
+    /* la seconda finta immagine, piu' in basso */
+    linear-gradient(135deg, #8E8F9C, #62636F) 97.1% 80% / 66% 9% no-repeat,
+    /* la prima finta immagine */
+    linear-gradient(135deg, #9A9BA8, #6E6F7C) 97.1% 30% / 66% 9% no-repeat,
+    /* il banner a righe diagonali */
+    repeating-linear-gradient(45deg, #D8D9E2 0 8px, #BCBDC8 8px 16px)
+      97.1% 16% / 66% 6% no-repeat,
+    /* le voci del menu nella colonna */
+    linear-gradient(#8D8E9B 0 100%) 8% 20% / 22% 1.3% no-repeat,
+    linear-gradient(#8D8E9B 0 100%) 8% 25% / 22% 1.3% no-repeat,
+    linear-gradient(#8D8E9B 0 100%) 8% 30% / 22% 1.3% no-repeat,
+    linear-gradient(#8D8E9B 0 100%) 8% 35% / 22% 1.3% no-repeat,
+    /* LE FASCE, opache dove devono coprire la colonna */
+    linear-gradient(
+      #2A2C3B 0 7%,
+      #3D3F4E 7% 11%,
+      transparent 11% 94%,
+      #2A2C3B 94% 100%
+    ),
+    /* la colonna di sinistra, a tutta altezza */
+    linear-gradient(90deg, #D2D3DC 0 30%, transparent 30%),
+    /* la pagina */
+    linear-gradient(#B6B7C2 0 100%);
+
   /* LA GRIGLIA DEL FINALE — due fasce dentro il riquadro: sopra quello che si
      legge, sotto quello che si tocca. Sta QUI perche' i lettori sono due: il
      DISEGNO del modulo dentro il telaio (app/palco.css) e il FOGLIO vero del

@@ -27,6 +27,17 @@ const JSON_OUT = process.argv.includes('--json');
 const ESTENSIONI = new Set(['.css', '.scss', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.html', '.astro', '.vue', '.svelte']);
 const SALTA = new Set(['node_modules', '.next', '.git', 'dist', 'build', 'out', 'coverage', '.astro', '.vercel', '.wrangler', 'legacy', '_legacy']);
 
+/**
+ * Un elenco di nomi non basta: basta una cartella di uscita chiamata in un
+ * altro modo — `out-campionario`, prodotta da `npm run build:campionario` —
+ * e il cancello si mette a leggere il CSS COMPILATO, dove i token sono gia'
+ * risolti in valori letterali. Risultato: tre errori e un avviso su un file
+ * minificato di 200 KB su una riga sola, cioe' il cancello che accusa il
+ * proprio compilatore. Qui si salta qualunque cartella che cominci per `out`
+ * o `dist`, e comunque tutto cio' che sta sotto un `_next`.
+ */
+const eUscita = (nome) => /^(out|dist)([-.].*)?$/.test(nome) || nome === '_next';
+
 /** File che SONO la fonte dei token: lì i valori grezzi sono legittimi. */
 const FONTI_TOKEN = /(design-tokens|tokens\.generated|tailwind\.config|theme\.(c|sc|le)ss|variabili|fondamenta\.css)/i;
 
@@ -40,7 +51,7 @@ function cammina(dir) {
   let voci;
   try { voci = readdirSync(dir); } catch { return; }
   for (const v of voci) {
-    if (SALTA.has(v) || v.startsWith('.') && v !== '.claude') continue;
+    if (SALTA.has(v) || eUscita(v) || (v.startsWith('.') && v !== '.claude')) continue;
     const p = join(dir, v);
     let st;
     try { st = statSync(p); } catch { continue; }

@@ -101,6 +101,31 @@ Il piede sta fuori dal foglio, su un letto di `--color-nero`: i dati obbligatori
 di luminanza nota e nessun movimento sopra. Vanno giudicati **con i `tbd()` addosso** — in quel
 stato il tratteggio li porta a 4,64:1 sul letto, e sarebbero stati 4,49:1 sul fondo del riquadro.
 
+### Gli strati disegnati (S1-S5)
+
+Il telaio mostra cinque disegni in CSS e SVG: il sito vecchio, le sue tessere, il wireframe, il
+sito nuovo, le schermate dell'app. Due regole li governano, e sono state pagate.
+
+**Una superficie si dichiara col contorno, non col riempimento.** I quattro fondi scuri della
+tavolozza stanno entro 1,16 l'uno dall'altro — `abisso → notte` è **1,09:1**, cioè niente. Gli
+strati erano scritti come se esistesse una scala di grigi scuri: tre blocchi del sito nuovo a
+1,09:1, le righe del telefono a 1,09:1, il calendario a 1,09:1. Roba disegnata che nessuno poteva
+vedere, e uno schermo del telefono che sembrava spento. Ora si usano `--contorno` (2,78:1) e
+`--contorno-acceso` (4,73:1), definiti in `globals.css` insieme alla scala e al motivo.
+
+**Le fasce sono proporzionali, non in pixel.** Tutti e cinque avevano `align-content: start` e
+altezze fisse tarate su un riquadro più piccolo: il contenuto si accucciava nel terzo superiore.
+In S2 il danno si moltiplicava — il sito vecchio riempiva un terzo, quindi trentadue tessere su
+quarantotto si portavano via del grigio vuoto quando si spaccava.
+
+**Le tessere sono i pezzi del sito vecchio, davvero.** Prima avevano un fondo piatto scelto a bande
+e la pagina si spaccava in una scacchiera di quattro tinte. Ora c'è **un disegno solo**
+(`--dipinto-vecchio`) e ogni tessera è una finestra sulla propria fetta: chi prende la testata porta
+via la testata, chi prende il banner porta via le righe diagonali. La pianta del sito vecchio
+(`--vec-testata`, `--vec-nav`, `--vec-piede`, `--vec-lato`) sta in un posto solo e la leggono in
+due: l'impaginazione vera e il disegno. Se divergessero, il sito si spaccherebbe in pezzi di un
+altro sito.
+
 ---
 
 ## Sostituire le cose
@@ -121,9 +146,10 @@ stato il tratteggio li porta a 4,64:1 sul letto, e sarebbero stati 4,49:1 sul fo
 Il montaggio si rifà con due comandi dalla cartella `../intro`, poi uno da qui:
 
 ```bash
-bash ../intro/monta-intro.sh    # monta le 7 clip: 1 → 3 → 2 → 4 → 5 → 6 (tagliato) → 7
-bash ../intro/grada-vecchio.sh  # porta il sito vecchio in grigio-blu
-npm run media                   # da lì alle tre codifiche + il poster
+bash ../intro/cerca-giunzioni.sh  # dove tagliare: cerca i fotogrammi che combaciano
+bash ../intro/monta-intro.sh      # monta le 7 clip: 1 → 3 → 2 → 4 → 5 → 6 → 7
+bash ../intro/grada-vecchio.sh    # porta il sito vecchio in grigio-blu
+npm run media                     # da lì alle tre codifiche + il poster
 ```
 
 `npm run media` scrive in `public/media/` due copie dello stesso filmato — **largo** (1600 px,
@@ -135,6 +161,19 @@ file si scarica sempre intero, anche da chi se ne va dopo tre secondi. Ogni mega
 da tutti. Ma con il video a tutto schermo una copia stretta ingrandita si vede — la finta
 interfaccia dentro il filmato ha testo piccolo, ed è la prima cosa che si sfalda.
 
+**Un pezzo solo, e i tagli sono misurati.** Le sette clip non condividono il fotogramma di
+giunzione — verificato, non supposto: la matrice PSNR di tutte le 49 coppie coda/testa non supera
+gli 11,9 dB, e due fotogrammi identici darebbero infinito. Condividono la *scena*, non l'immagine.
+Quindi `cerca-giunzioni.sh` cerca, per ogni giunzione, la coppia che differisce di meno dentro una
+finestra **che il racconto consente** — lasciata libera, la ricerca voleva far partire la clip 7 a
+metà saltandone l'apertura del logo, solo perché quell'inquadratura somigliava alla fine della 6.
+I pixel non sanno la storia.
+
+Il residuo a quei punti decide il trattamento, e non è lo stesso per tutti: sotto 40 (su 255)
+**stacco netto**, sopra 65 una dissolvenza di otto fotogrammi. Due giunzioni su sei sono stacchi, e
+sono invisibili — prima erano tutte dissolvenze da mezzo secondo, che su due inquadrature quasi
+uguali non uniscono: sfocano, e per un attimo si vedono due monitor sovrapposti.
+
 Due cose da sapere sul filmato attuale:
 
 - **il giro non passa dal nero.** Testa e coda avevano una dissolvenza dal nero, messa perché
@@ -144,7 +183,8 @@ Due cose da sapere sul filmato attuale:
 - **dal secondo 28,3 porta il testo impresso dentro** — «Vuole viverlo», i tre vantaggi,
   «Web. App. Esperienza.», il claim e il bottone disegnato. La sovrimpressione del sito tace
   da lì in poi. Se il video cambia, `sovrimpressioneFinoA` in `config/hero.ts` è l'unico
-  numero da rivedere.
+  numero da rivedere — ed è cambiato con il rimontaggio: era 28,3 su un filmato da 38,17 s, ora è
+  22,6 su uno da 31,75.
 
 ---
 

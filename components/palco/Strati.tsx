@@ -33,14 +33,27 @@ export function SitoVecchio() {
           <span />
           <span />
           <span />
+          <span />
+          <span />
         </div>
+        {/* Piu' contenuto di prima, e non per riempire: il corpo si fermava a
+            un terzo dell'altezza, quindi in S2 due tessere su tre si portavano
+            via del grigio vuoto. Un sito che si spacca deve avere qualcosa da
+            spaccare in ogni suo punto. */}
         <div className="v-main" data-parte="d">
           <div className="v-banner">★ SITO IN COSTRUZIONE ★</div>
           <div className="v-img">immagine.jpg</div>
           <div className="v-testo" />
           <div className="v-testo" style={{ width: '82%' }} />
           <div className="v-testo" style={{ width: '64%' }} />
+          <div className="v-img v-img-2">foto_sede.jpg</div>
+          <div className="v-testo" />
+          <div className="v-testo" style={{ width: '71%' }} />
         </div>
+      </div>
+      <div className="v-piede">
+        <span>Ultimo aggiornamento: 14/03/2009</span>
+        <span>Ottimizzato per 1024×768</span>
       </div>
       <div className="v-glitch" data-parte="glitch" />
       <div className="v-rotella" />
@@ -60,8 +73,18 @@ export function SitoVecchio() {
 }
 
 /* ------------------------------------------------------------------ S2 --- */
-/** Le tessere in cui il sito si spacca: prendono le sue tinte, perche' sono
- *  letteralmente i suoi pezzi. Otto per sei: piu' fitte sembrano rumore. */
+/** Le tessere in cui il sito si spacca.
+ *
+ *  Prima avevano un fondo PIATTO scelto a bande — riga 0 scura, riga 1 meno
+ *  scura, prime due colonne chiare, resto grigio — e il risultato era che
+ *  quando il sito si spaccava non si spaccavano i SUOI pezzi: si spaccava una
+ *  scacchiera di quattro tinte. Ora ogni tessera e' una finestra su un unico
+ *  disegno del sito vecchio (--dipinto-vecchio), e mostra la fetta che le
+ *  compete: chi prende la testata porta via la testata, chi prende il banner
+ *  porta via le righe diagonali.
+ *
+ *  Otto per sei: piu' fitte sembrano rumore, e ogni tessera in piu' e' un nodo
+ *  che il palco puo' dover riscrivere a ogni fotogramma. */
 export const COLONNE = 8;
 export const RIGHE = 6;
 
@@ -69,20 +92,24 @@ export function Tessere() {
   const celle = [];
   for (let r = 0; r < RIGHE; r++) {
     for (let c = 0; c < COLONNE; c++) {
-      const tinta =
-        r === 0 ? '#2A2C3B' : r === 1 ? '#3D3F4E' : c < 2 ? '#D2D3DC' : '#B6B7C2';
       celle.push(
         <i
           key={`${r}-${c}`}
           data-dx={c - COLONNE / 2 + 0.5}
           data-dy={r - RIGHE / 2 + 0.5}
-          style={{
-            left: `${(c / COLONNE) * 100}%`,
-            top: `${(r / RIGHE) * 100}%`,
-            width: `${100 / COLONNE}%`,
-            height: `${100 / RIGHE}%`,
-            background: tinta,
-          }}
+          style={
+            {
+              left: `${(c / COLONNE) * 100}%`,
+              top: `${(r / RIGHE) * 100}%`,
+              width: `${100 / COLONNE}%`,
+              height: `${100 / RIGHE}%`,
+              // quale fetta del disegno tocca a questa tessera. Il disegno sta
+              // in un posto solo (--dipinto-vecchio, in globals.css); qui c'e'
+              // solo la finestra da cui lo si guarda.
+              '--c': c,
+              '--r': r,
+            } as React.CSSProperties
+          }
         />,
       );
     }
@@ -102,7 +129,15 @@ export function Particelle() {
       {Array.from({ length: QUANTE_PARTICELLE }, (_, i) => (
         <i
           key={i}
-          style={{ left: `${(i * 37) % 100}%`, top: `${(i * 61) % 100}%` }}
+          style={
+            {
+              left: `${(i * 37) % 100}%`,
+              top: `${(i * 61) % 100}%`,
+              // quanto e' "vicina": detta misura e luce, cosi' lo sciame ha una
+              // profondita' invece di essere settanta punti identici.
+              '--p': (((i * 29) % 17) / 16).toFixed(3),
+            } as React.CSSProperties
+          }
           data-sx={((i * 13) % 21) / 10 - 1}
           data-sy={-(((i * 7) % 7) / 10 + 0.3)}
         />
@@ -166,10 +201,24 @@ export function SitoNuovo({ mobile = false }: { mobile?: boolean }) {
         <div className="n-s" />
         <div className="n-b" />
       </div>
+      {/* Un'icona e due righe dentro ogni scheda: tre rettangoli vuoti si
+          leggono come un segnaposto, per bravo che sia il contorno. */}
       <div className="n-col">
-        <div />
-        <div />
-        <div />
+        <div>
+          <b />
+          <u />
+          <s />
+        </div>
+        <div>
+          <b />
+          <u />
+          <s />
+        </div>
+        <div>
+          <b />
+          <u />
+          <s />
+        </div>
       </div>
       {!mobile && <div className="n-rig" />}
     </div>
@@ -184,36 +233,85 @@ export function Schermate() {
   const s5 = sezioni.s5;
   return (
     <div className="strato strato-telefono schermate" data-strato="schermate">
+      {/* Ogni schermata e' alta quanto il telefono. Prima ne riempiva un terzo —
+          un titolo e due righe su seicento pixel — e le altre due terzi erano
+          fondo: l'app sembrava un'app che non ha ancora caricato. Qui ognuna ha
+          il contenuto che una schermata vera avrebbe, e una barra in fondo:
+          e' la barra che dice "questo e' un telefono" meglio di ogni altra cosa
+          disegnata. */}
       <div className="nastro" data-parte="nastro">
         <div className="schermo">
           <p className="s-tit">Ciao, Marco</p>
           <div className="s-rig" />
           <div className="s-rig" />
+          <div className="s-riquadri">
+            <i />
+            <i />
+            <i />
+            <i />
+          </div>
+          <div className="s-rig" />
+          <div className="s-barra">
+            <i className="sel" />
+            <i />
+            <i />
+            <i />
+          </div>
         </div>
         <div className="schermo">
           <p className="s-tit">Prenota un appuntamento</p>
           <div className="s-cal">
-            {Array.from({ length: 14 }, (_, i) => (
-              <i key={i} className={i === 3 ? 'sel' : undefined} />
+            {Array.from({ length: 28 }, (_, i) => (
+              <i key={i} className={i === 10 ? 'sel' : undefined} />
             ))}
           </div>
           <div className="s-rig" />
+          <div className="s-rig" />
+          <div className="s-pieno">Conferma</div>
+          <div className="s-barra">
+            <i />
+            <i className="sel" />
+            <i />
+            <i />
+          </div>
         </div>
         <div className="schermo">
           <p className="s-tit">I tuoi ordini</p>
           <div className="s-rig" />
           <div className="s-rig" />
+          <div className="s-rig" />
+          <div className="s-rig" />
+          <div className="s-barra">
+            <i />
+            <i />
+            <i className="sel" />
+            <i />
+          </div>
         </div>
         <div className="schermo">
           <p className="s-tit">Assistente AI</p>
           <p className="s-bolla ai" data-bolla="0" data-testo={s5.conversazione[0]} />
           <p className="s-bolla io" data-bolla="1" data-testo={s5.conversazione[1]} />
           <p className="s-bolla ai" data-bolla="2" data-testo={s5.conversazione[2]} />
+          <div className="s-scrivi" />
+          <div className="s-barra">
+            <i />
+            <i />
+            <i />
+            <i className="sel" />
+          </div>
         </div>
         <div className="schermo">
           <div className="s-ok">
             <span className="s-cerchio">✓</span>
             <p className="s-tit">Prenotazione confermata</p>
+            <div className="s-rig" />
+          </div>
+          <div className="s-barra">
+            <i />
+            <i className="sel" />
+            <i />
+            <i />
           </div>
         </div>
       </div>
